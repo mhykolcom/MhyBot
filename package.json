@@ -1,0 +1,36 @@
+{
+  "name": "clutch-bot",
+  "version": "1.0.0",
+  "description": "Clutch chat bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc && node dist",
+    "build": "tsc",
+    "test": "mocha tests/"
+  },
+  "authors": [
+    "Clutch",
+    "Innectic"
+  ],
+  "private": true,
+  "dependencies": {
+    "@types/chai": "^3.5.2",
+    "@types/chalk": "^0.4.31",
+    "@types/dateformat": "^1.0.1",
+    "@types/mongoose": "^4.7.13",
+    "@types/ws": "0.0.41",
+    "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
+    "chalk": "^1.1.3",
+    "command-line-args": "^4.0.5",
+    "dateformat": "^2.0.0",
+    "mocha": "^3.4.2",
+    "mongoose": "^4.10.2",
+    "rxjs": "^5.4.2",
+    "typescript": "^2.3.3",
+    "ws": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^7.0.22"
+  }
+}
