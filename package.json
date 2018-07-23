@@ -25,6 +25,7 @@
     "command-line-args": "^4.0.7",
     "dateformat": "^2.2.0",
     "discord.js": "^11.3.2",
+    "eslint": "^5.2.0",
     "mocha": "^3.5.3",
     "mongoose": "^4.13.14",
     "npm": "^6.2.0",
