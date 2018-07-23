@@ -1,7 +1,7 @@
 {
-  "name": "clutch-bot",
+  "name": "mhykol-bot",
   "version": "1.0.0",
-  "description": "Clutch chat bot",
+  "description": "Mhykol Discord/Twitch Live Bot",
   "main": "index.js",
   "scripts": {
     "start": "tsc && node dist",
@@ -9,30 +9,32 @@
     "test": "mocha tests/"
   },
   "authors": [
-    "Clutch",
-    "Innectic"
+    "Mhykol"
   ],
   "private": true,
   "dependencies": {
     "@types/chai": "^3.5.2",
     "@types/chalk": "^0.4.31",
     "@types/dateformat": "^1.0.1",
-    "@types/mongoose": "^4.7.13",
+    "@types/mongoose": "^4.7.37",
     "@types/ws": "0.0.41",
+    "bufferutil": "^4.0.0",
     "chai": "^3.5.0",
     "chai-as-promised": "^6.0.0",
     "chalk": "^1.1.3",
-    "command-line-args": "^4.0.5",
-    "dateformat": "^2.0.0",
+    "command-line-args": "^4.0.7",
+    "dateformat": "^2.2.0",
     "discord.js": "^11.3.2",
-    "mocha": "^3.4.2",
-    "mongoose": "^4.10.2",
+    "mocha": "^3.5.3",
+    "mongoose": "^4.13.14",
+    "npm": "^6.2.0",
+    "python": "0.0.4",
     "rxjs": "^5.4.2",
     "twitch-wrapper-ts": "^1.0.1",
-    "typescript": "^2.3.3",
-    "ws": "^3.0.0"
+    "typescript": "^2.9.2",
+    "ws": "^3.3.3"
   },
   "devDependencies": {
-    "@types/node": "^7.0.22"
+    "@types/node": "^7.0.67"
   }
 }
