@@ -1,42 +1,28 @@
+// require the discord.js module
 const Discord = require('discord.js');
+
+// create a new Discord client
 const client = new Discord.Client();
 
+// Import config
+const config = require('./config/config.json');
 
-function start() {
-    const parsed = commandLineArgs(options);
-    let configInfo: Config = null;
-    if (Object.keys(parsed).length === 0) {
-        try {
-            configInfo = require("./config/config");
-        } catch (e) {
-            configInfo = null;
-        }
-        if (configInfo == null) {
-            Logger.error("Could not start bot! Please specify command line args or include a config file.");
-            return;
-        }
-    } else {
-        if (parsed.username == null) {
-            Logger.error("Could not start bot! Username argument not specified.");
-            return;
-        }
-        if (parsed.token == null) {
-            Logger.error("Could not start bot! Token argument not specified.");
-            return;
-        }
-        if (parsed.channel == null) {
-            Logger.error("Could not start bot! Channel argument not specified.");
-            return;
-        }
-        configInfo = exampleConfig;
-        configInfo.bot = {username: parsed.username, token: parsed.token, channel: parsed.channel};
-    }
-    client.on('ready', () => {
-        console.log('Ready!');
-    });
-    
-    client.login(parsed.token);
+// when the client is ready, run this code
+// this event will trigger whenever your bot:
+// - finishes logging in
+// - reconnects after disconnecting
+client.on('ready', () => {
+    console.log('Ready!');
+});
+
+// login to Discord with your app's token
+client.login(config.discordtoken);
+
+client.on('message', message => {
+    console.log(message.content);
+});
+
+if (message.content === '!ping') {
+    // send back "Pong." to the channel the message was sent in
+    message.channel.send('Pong.');
 }
-
-start();
-
