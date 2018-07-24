@@ -5,7 +5,7 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 
 // Import config
-const config = require('./config/config.json');
+const { prefix, discordtoken, twitchtoken } = require('./config/config.json');
 
 // when the client is ready, run this code
 // this event will trigger whenever your bot:
@@ -16,13 +16,23 @@ client.on('ready', () => {
 });
 
 // login to Discord with your app's token
-client.login(config.discordtoken);
+client.login(discordtoken);
+
+const exampleEmbed = new Discord.RichEmbed()
+    .setColor('#0099ff')
+    .setTitle('https://twitch.tv/mhykol')
+    .setURL('https://twitch.tv/mhykol')
+    .setAuthor('Mhykol has gone live on Twitch', 'https://i.imgur.com/wSTFkRM.png', 'https://twitch.tv/mhykol')
+    
+    .setThumbnail('https://i.imgur.com/wSTFkRM.png')
+    .addField('Now Playing', 'Game')
+    .addField('Title', 'Junk')
+    .setTimestamp()
+    .setFooter('Twitch Live Bot by Mhykol', 'https://i.imgur.com/wSTFkRM.png');
 
 client.on('message', message => {
-    console.log(message.content);
+    if (message.content == "!test") {
+        message.channel.send(exampleEmbed)
+    }
 });
 
-if (message.content === '!ping') {
-    // send back "Pong." to the channel the message was sent in
-    message.channel.send('Pong.');
-}
