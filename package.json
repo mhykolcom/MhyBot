@@ -1,0 +1,24 @@
+{
+  "name": "mhybot",
+  "version": "1.0.0",
+  "description": "Mhykol's Discord Twitch Live Bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mhykolcom/MhyBot.git"
+  },
+  "author": "Mhykol",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mhykolcom/MhyBot/issues"
+  },
+  "homepage": "https://github.com/mhykolcom/MhyBot#readme",
+  "dependencies": {
+    "discord.js": "^11.3.2",
+    "twitch-wrapper-ts": "^1.0.1",
+    "typescript": "^2.9.2"
+  }
+}
