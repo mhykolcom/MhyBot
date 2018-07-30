@@ -1,0 +1,18 @@
+[
+    {
+        "name": "Mhykol Twitch Discord",
+        "lastPrefix": "/",
+        "prefix": "!",
+        "role": "botadmin",
+        "discordChannels": [
+            "test"
+        ],
+        "twitchChannels": [
+            {
+                "name": "Guude",
+                "timestamp": 1532921318406,
+                "online": true
+            }
+        ]
+    }
+]
