@@ -1,7 +1,8 @@
 const fs = require('fs');
 const Discord = require('discord.js');
+import { ApiRequester } from "twitch-wrapper-ts";
 const { prefix, discordtoken, twitchtoken } = require('./config/config.json');
-
+const twitchApi = new TwitchApi(clientId, twitchtoken);
 const client = new Discord.Client();
 client.commands = new Discord.Collection();
 
