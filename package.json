@@ -18,6 +18,7 @@
   "homepage": "https://github.com/mhykolcom/MhyBot#readme",
   "dependencies": {
     "discord.js": "^11.3.2",
+    "npm": "^6.2.0",
     "twitch-wrapper-ts": "^1.0.1",
     "typescript": "^2.9.2"
   }
