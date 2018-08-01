@@ -9,9 +9,16 @@
         ],
         "twitchChannels": [
             {
-                "name": "Guude",
-                "timestamp": 1532921318406,
-                "online": false
+                "name": "Mhykol",
+                "timestamp": 1533094575598,
+                "online": true,
+                "messageid": "474057747243991060"
+            },
+            {
+                "name": "Breon",
+                "timestamp": 1533094575597,
+                "online": true,
+                "messageid": "474057746472239124"
             }
         ]
     }

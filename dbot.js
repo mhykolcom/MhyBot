@@ -383,7 +383,7 @@ bot.login(token).then((token)=>{
         servers = JSON.parse(file);
 
         // tick once on startup
-        tick();
+        //tick();
         setInterval(tick, interval);
     }else{
         print("An error occured while loging in:", err);
