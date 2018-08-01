@@ -9,6 +9,7 @@ const
 const {prefix, discordtoken, twitchtoken} = require('./config/config.json');
 var servers = [];
 var twitchapi = require('twitch-api-v5');
+var moment = require('moment');
 twitchapi.clientID = twitchtoken;
 //twitchapi.debug = true;
 client.commands = new Discord.Collection();

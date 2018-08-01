@@ -18,6 +18,7 @@
   "homepage": "https://github.com/mhykolcom/MhyBot#readme",
   "dependencies": {
     "discord.js": "^11.3.2",
+    "moment": "^2.22.2",
     "npm": "^6.2.0",
     "twitch-api-v5": "^2.0.4"
   }
