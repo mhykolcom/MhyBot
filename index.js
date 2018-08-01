@@ -3,7 +3,7 @@ const
     Discord = require('discord.js'),
     client = new Discord.Client(),
     commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js')),
-    channelPath = __dirname + "/.channels",
+    channelPath = __dirname + "/channels.json",
     timeout = 1*60*1000; // Set timeout to 2 minutes
 
 const {prefix, discordtoken, twitchtoken} = require('./config/config.json');
