@@ -50,7 +50,7 @@ client.on('ready', () => {
 
     // Tick twice at startup for weird bug reason
     tick();
-    setTimeout(tick,5000);
+    setTimeout(tick,10000);
     setInterval(tick, timeout);  
 });
 
@@ -99,7 +99,7 @@ client.on("message", (message)=>{
         let index = indexOfObjectByName(servers, message.guild.name);
         if(index == -1){
             servers.push({name: message.guild.name,
-                          lastPrefix: "!", prefix: "/",
+                          lastPrefix: "!", prefix: "~",
                           role: "botadmin", discordChannels: [],
                           twitchChannels: []});
             index = servers.length - 1;
@@ -352,7 +352,7 @@ function createEmbed(server, twitchChannel, res) {
 
 
 function postDiscord(server, twitchChannel, err, res) {
-    //print(res);
+    print(res);
     if(res.stream != null && twitchChannel.messageid == null) {
         // Do new message code
         print(twitchChannel.name + ": New stream live")
