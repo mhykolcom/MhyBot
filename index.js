@@ -1,4 +1,5 @@
-const 
+  require('winston')
+  const 
     fs = require('fs'),
     Discord = require('discord.js'),
     client = new Discord.Client(),
@@ -29,7 +30,9 @@ function print(msg, err){
     var s = leadingZero(date.getSeconds());
 
     console.log("[" + h + ":" + m + ":" + s + "]", msg);
-    
+    var guild = client.guilds.find("name", "Mhykol Twitch Discord");
+    var channels = guild.channels.find("name", "bots");
+    //channels.send("[" + h + ":" + m + ":" + s + "] " + msg);
     if(err){
         console.log(err);
     }
@@ -145,18 +148,18 @@ client.on("message", (message)=>{
                 streamer = message.content.slice(4).trim();
                 var channelObject = {name: streamer};
                 index = indexOfObjectByName(twitchChannels, streamer);
-                /*callApi(server, channelObject, (serv, chan, res)=>{
+                twitchapi.users.usersByName(channelObject, (res)=>{
                     if(index != -1){
                         message.reply(streamer + " is already in the list.");
-                    }else if(res){*/
+                    }else if(res.users.length > 0){
                         twitchChannels.push({name: streamer, timestamp: 0,
                                              online: false});
                         message.reply("Added " + streamer + ".");
-                        tick();/*
+                        //tick();
                     }else{
                         message.reply(streamer + " doesn't seem to exist.");
                     }
-                }, false);*/
+                });
             }else{
                 message.reply("you're lacking the role _" + server.role + "_.");
             }
@@ -298,7 +301,7 @@ function tick(){
 function getChannelInfo(server, channel, err, res) {
     //print(res);
     //print(res.users[0]._id);
-    if (!res){return;}
+    if (!res) return;
     channelID = res.users[0]._id;
     twitchapi.streams.channel({channelID: res.users[0]._id }, postDiscord.bind(this, server, channel));
 }
@@ -354,11 +357,9 @@ function createEmbed(server, twitchChannel, res) {
 
 
 function postDiscord(server, twitchChannel, err, res) {
-    //print(res);
-    if(!res) { return; }
+    if(!res) return;
     if(res.stream != null && twitchChannel.messageid == null) {
         // Do new message code
-        print(twitchChannel.name + ": New stream live")
         try {
             var channels = [], defaultChannel;
             var guild = client.guilds.find("name", server.name);
@@ -375,8 +376,7 @@ function postDiscord(server, twitchChannel, err, res) {
                 for(let i = 0; i < channels.length; i++){
                     channels[i].send(discordEmbed).then(
                         (message) => { 
-                        print("Sent embed to channel '" + channels[i].name + "' for '" + twitchChannel.name + "'.")
-                        //print(message.id)
+                        print(`[${server.name}/${channels[i].name}] Now Live: ${twitchChannel.name}`)
                         twitchChannel.messageid = message.id
                     });    
                 }
@@ -385,8 +385,7 @@ function postDiscord(server, twitchChannel, err, res) {
             }else if(defaultChannel){
                 defaultChannel.send(embed).then(
                     (message) => {
-                    print("Sent embed to channel '" + defaultChannel.name + "' for '" + twitchChannel.name + "'.")
-                    //print(message.id)
+                    print(`[${server.name}/${defaultChannel.name}] Now Live: ${twitchChannel.name}`)
                     twitchChannel.messageid = message.id
                     });
                 twitchChannel.online = true;
@@ -398,7 +397,6 @@ function postDiscord(server, twitchChannel, err, res) {
         }
     } else if (res.stream != null && twitchChannel.messageid != null) {
         // Do edit message code
-        print(twitchChannel.name + ": Stream update")
         try {
             var channels = [], defaultChannel;
             var guild = client.guilds.find("name", server.name);
@@ -415,8 +413,7 @@ function postDiscord(server, twitchChannel, err, res) {
                 for(let i = 0; i < channels.length; i++){
                     channels[i].fetchMessage(twitchChannel.messageid).then(
                         message => message.edit(discordEmbed).then((message) => { 
-                        print("Updated embed to channel '" + channels[i].name + "' for '" + twitchChannel.name + "'.")
-                        //print(message.id)
+                        print(`[${server.name}/${channels[i].name}] Channel Update: ${twitchChannel.name}`)
                         twitchChannel.messageid = message.id
                     }));    
                 }
@@ -425,7 +422,7 @@ function postDiscord(server, twitchChannel, err, res) {
             }else if(defaultChannel){
                 defaultChannel.fetchMessage(twitchChannel.messageid).then(
                     message => message.edit(discordEmbed).then((message) => { 
-                    print("Updated embed to channel '" + channels[i].name + "' for '" + twitchChannel.name + "'.")
+                    print(`[${server.name}/${defaultChannel.name}] Channel Update: ${twitchChannel.name}`)
                     //print(message.id)
                     twitchChannel.messageid = message.id
                 }));
@@ -438,7 +435,6 @@ function postDiscord(server, twitchChannel, err, res) {
         }
     } else if (res.stream == null && twitchChannel.messageid != null) {
         // Do delete message code
-        print(twitchChannel.name + ": Stream went offline")
         try {
             var channels = [], defaultChannel;
             var guild = client.guilds.find("name", server.name);
@@ -453,18 +449,18 @@ function postDiscord(server, twitchChannel, err, res) {
             if(channels.length !== 0){
                 for(let i = 0; i < channels.length; i++){
                     channels[i].fetchMessage(twitchChannel.messageid).then(
-                        message => message.delete().then( 
-                        print("Deleted embed in channel '" + channels[i].name + "' for '" + twitchChannel.name + "'."),
+                        message => message.delete().then( (message) => {
+                        print(`[${server.name}/${channels[i].name}] Channel Offline: ${twitchChannel.name}`)
                         twitchChannel.messageid = null
-                    ));    
+                    }));    
                 }
                 twitchChannel.online = false;
             }else if(defaultChannel){
                 defaultChannel.fetchMessage(twitchChannel.messageid).then(
-                    message => message.delete().then( 
-                    print("Deleted embed in channel '" + channels[i].name + "' for '" + twitchChannel.name + "'."),
+                    message => message.delete().then( (message) => {
+                    print(`[${server.name}/${defaultChannel.name}] Channel Offline: ${twitchChannel.name}`)
                     twitchChannel.messageid = null
-                ));
+                }));
                 twitchChannel.online = false;
             }
         }
@@ -476,7 +472,6 @@ function postDiscord(server, twitchChannel, err, res) {
 
 function savechannels() {
     print("Saving channels to " + channelPath);
-    //print(JSON.stringify(servers));
     fs.writeFileSync(channelPath, JSON.stringify(servers, null, 4));
     print("Done");
 }

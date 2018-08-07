@@ -18,8 +18,10 @@
   "homepage": "https://github.com/mhykolcom/MhyBot#readme",
   "dependencies": {
     "discord.js": "^11.3.2",
+    "forever-monitor": "^1.7.1",
     "moment": "^2.22.2",
     "npm": "^6.2.0",
-    "twitch-api-v5": "^2.0.4"
+    "twitch-api-v5": "^2.0.4",
+    "winston": "^3.0.0"
   }
 }
