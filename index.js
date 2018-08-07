@@ -29,6 +29,7 @@ function print(msg, err){
     var s = leadingZero(date.getSeconds());
 
     console.log("[" + h + ":" + m + ":" + s + "]", msg);
+    
     if(err){
         console.log(err);
     }
@@ -297,6 +298,7 @@ function tick(){
 function getChannelInfo(server, channel, err, res) {
     //print(res);
     //print(res.users[0]._id);
+    if (!res){return;}
     channelID = res.users[0]._id;
     twitchapi.streams.channel({channelID: res.users[0]._id }, postDiscord.bind(this, server, channel));
 }
@@ -352,7 +354,8 @@ function createEmbed(server, twitchChannel, res) {
 
 
 function postDiscord(server, twitchChannel, err, res) {
-    print(res);
+    //print(res);
+    if(!res) { return; }
     if(res.stream != null && twitchChannel.messageid == null) {
         // Do new message code
         print(twitchChannel.name + ": New stream live")
