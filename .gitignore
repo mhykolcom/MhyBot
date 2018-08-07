@@ -1,3 +1,4 @@
 config/config.json
 channels.json
 node_modules
+node_modules/ 
