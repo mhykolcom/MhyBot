@@ -285,25 +285,21 @@ client.on("message", (message)=>{
 });
 
 function tick(){
-    for(let i = 0; i < servers.length; i++){
-        for(let j = 0; j < servers[i].twitchChannels.length; j++){
-            for(let k = 0; k < servers[i].discordChannels.length; k++){
-                if(servers[i].twitchChannels[j]){
-                    twitchapi.users.usersByName({ users: servers[i].twitchChannels[j].name }, getChannelInfo.bind(this, servers[i],servers[i].twitchChannels[j]))
-                }
-            }
-        }
-    }
+    servers.forEach((server) => {
+        twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) },getChannelInfo.bind(this, server))        
+    })
     savechannels();
     print("Tick happened!")
 }
 
-function getChannelInfo(server, channel, err, res) {
-    //print(res);
-    //print(res.users[0]._id);
+function getChannelInfo(server, err, res) {
     if (!res) return;
-    channelID = res.users[0]._id;
-    twitchapi.streams.channel({channelID: res.users[0]._id }, postDiscord.bind(this, server, channel));
+
+    res.users.forEach((user) => {
+        channelID = user._id;
+        twitchChannel = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
+        twitchapi.streams.channel({channelID: user._id }, postDiscord.bind(this, server, twitchChannel));
+    })
 }
 
 function fancyTimeFormat(time)
@@ -340,8 +336,6 @@ function createEmbed(server, twitchChannel, res) {
     var startDate = moment(res.stream.created_at)
     var endDate = moment.now()
     twitchChannel.uptime = moment(endDate).diff(startDate, 'seconds')
-    //print("Uptime: " + twitchChannel.uptime)
-    //twitchChannel.uptime = moment(res.stream.created_at).fromNow().format("")
     var embed = new Discord.RichEmbed()
                         .setColor("#6441A5")
                         .setTitle(res.stream.channel.display_name.replace(/_/g, "\\_"))
