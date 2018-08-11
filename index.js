@@ -7,8 +7,8 @@ const logger = winston.createLogger({
       // - Write to all logs with level `info` and below to `combined.log` 
       // - Write all logs error (and below) to `error.log`.
       //
-      new winston.transports.File({ filename: 'error.log', level: 'error' }),
-      new winston.transports.File({ filename: 'combined.log' })
+      new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+      new winston.transports.File({ filename: 'logs/combined.log' })
     ]
 });
 const 
@@ -158,9 +158,13 @@ client.on("message", (message)=>{
         }else if(message.content.substring(1, 4) == "add"){
             if(permission){
                 streamer = message.content.slice(4).trim();
-                var channelObject = {name: streamer};
                 index = indexOfObjectByName(twitchChannels, streamer);
-                twitchapi.users.usersByName(channelObject, (res)=>{
+                twitchapi.users.usersByName( { users: streamer }, (err,res)=>{
+                    if (err) print(err);
+                    if (!res) {
+                        message.reply("API error finding user: " + streamer)
+                        return
+                    }
                     if(index != -1){
                         message.reply(streamer + " is already in the list.");
                     }else if(res.users.length > 0){
@@ -298,7 +302,11 @@ client.on("message", (message)=>{
 
 function tick(){
     servers.forEach((server) => {
-        twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) },getChannelInfo.bind(this, server))        
+        try {
+            twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) },getChannelInfo.bind(this, server))        
+        } catch(err) {
+            print(err);
+        }
     })
     savechannels();
     print("Tick happened!")
