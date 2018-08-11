@@ -3,13 +3,13 @@ module.exports = {
     description: 'Get status of Twitch channel.',
     args: true,
     usage: '<channel name>',
-    execute(message, args) {
+    execute(client, message, args) {
         /*const TwitchChannel = message.mentions.users.map(user => {
             return `${user.username}'s Twitch channel: ${userconnection.name}`;
         });*/
 
         
 
-        message.channel.send(TwitchChannel);
+        // message.channel.send(TwitchChannel);
     },
 };
