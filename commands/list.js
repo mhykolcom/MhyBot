@@ -1,5 +1,6 @@
 module.exports = {
     name: 'list',
+    category: "Twitch",
     description: 'List Twitch channels in the broadcast list.',
     aliases: [],
     args: false,

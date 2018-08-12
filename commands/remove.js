@@ -1,7 +1,8 @@
 module.exports = {
     name: 'remove',
+    category: "Twitch",
     description: 'Remove Twitch channel from broadcast list.',
-    aliases: [],
+    aliases: ['r','del'],
     args: true,
     usage: '<TwitchChannel>',
     permission: "admin", // not used yet, 

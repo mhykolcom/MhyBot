@@ -1,16 +1,31 @@
 winston = require('winston')
+
+const alignedWithColorsAndTime = winston.format.combine(
+    winston.format.colorize(),
+    winston.format.timestamp(),
+    winston.format.align(),
+    winston.format.printf((info) => {
+        const {
+            timestamp, level, message, ...args
+        } = info;
+
+        const ts = timestamp.slice(0, 19).replace('T', ' ');
+        return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
+    }),
+);
+
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.json(),
     transports: [
-        //
-        // - Write to all logs with level `info` and below to `combined.log` 
-        // - Write all logs error (and below) to `error.log`.
-        //
+        new winston.transports.Console({
+            format: alignedWithColorsAndTime
+        }),
         new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'logs/combined.log' })
+        // new winston.transports.File({ filename: 'logs/combined.log' })
     ]
 });
+
 const
     fs = require('fs'),
     Discord = require('discord.js'),
@@ -18,7 +33,7 @@ const
     commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js')),
     channelPath = __dirname + "/channels.json",
     timeout = 4 * 60 * 1000,
-    { print, fancyTimeFormat } = require('./utils.js');
+    { fancyTimeFormat } = require('./utils.js');
 
 const { discordtoken, twitchtoken } = require('./config/config.json');
 client.twitchapi = require('twitch-api-v5');
@@ -37,8 +52,8 @@ for (const file of commandFiles) {
 
 
 client.on('ready', () => {
-    print("Logged in to Discord");
-    print("Reading file: " + channelPath);
+    logger.info("Logged in to Discord");
+    logger.info("Reading file: " + channelPath);
     var file = fs.readFileSync(channelPath, { encoding: "utf-8" });
     client.servers = JSON.parse(file);
 
@@ -61,7 +76,7 @@ client.on('message', message => {
         client.servers.push({
             name: message.guild.name,
             lastPrefix: "!", prefix: "~",
-            role: "botadmin", discordChannels: [],
+            role: "botadmin", discordChannel: [],
             twitchChannels: []
         });
         index = client.servers.length - 1;
@@ -106,7 +121,7 @@ client.on('message', message => {
         command.execute(client, message, args);
     }
     catch (error) {
-        console.error(error);
+        logger.error(error);
         message.reply('there was an error trying to execute that command!');
     }
 });
@@ -125,15 +140,16 @@ function tick() {
         try {
             client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
         } catch (err) {
-            print(err);
+            logger.error(`Error in tick: ${err}`);
         }
     })
     savechannels();
-    print("Tick happened!")
+    logger.info("Tick happened!")
 }
 
 function getChannelInfo(server, err, res) {
     if (!res) return;
+    if (err) logger.error(`Error in getChannelInfo: ${err}`);
 
     res.users.forEach((user) => {
         channelID = user._id;
@@ -150,7 +166,7 @@ function createEmbed(server, twitchChannel, res) {
     twitchChannel.uptime = moment(endDate).diff(startDate, 'seconds')
     var embed = new Discord.RichEmbed()
         .setColor("#6441A5")
-        .setTitle(res.stream.channel.display_name.replace(/_/g, "\\_"))
+        .setTitle(res.stream.channel.display_name)
         .setURL(res.stream.channel.url)
         .setDescription("**" + res.stream.channel.status +
             "**\n" + res.stream.game)
@@ -164,6 +180,7 @@ function createEmbed(server, twitchChannel, res) {
 
 function postDiscord(server, twitchChannel, err, res) {
     if (!res) return;
+    if (err) logger.error(`Error in postDiscord: ${err}`);
     if (server.discordChannels.length == 0) return;
 
     if (res.stream != null && twitchChannel.messageid == null) {
@@ -175,7 +192,7 @@ function postDiscord(server, twitchChannel, err, res) {
 
             discordChannel.send(discordEmbed).then(
                 (message) => {
-                    print(`[${server.name}/${discordChannel.name}] Now Live: ${twitchChannel.name}`)
+                    logger.info(`[${server.name}/${discordChannel.name}] Now Live: ${twitchChannel.name}`)
                     twitchChannel.messageid = message.id
                 }
             );
@@ -183,7 +200,7 @@ function postDiscord(server, twitchChannel, err, res) {
             twitchChannel.timestamp = Date.now();
         }
         catch (err) {
-            print(err);
+            logger.error(`Error in postDiscord new msg: ${err}`);
         }
     } else if (res.stream != null && twitchChannel.messageid != null) {
         // Do edit message code
@@ -194,14 +211,14 @@ function postDiscord(server, twitchChannel, err, res) {
 
             discordChannel.fetchMessage(twitchChannel.messageid).then(
                 message => message.edit(discordEmbed).then((message) => {
-                    print(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
+                    logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
                     twitchChannel.messageid = message.id
                 })
             );
             twitchChannel.online = true;
             twitchChannel.timestamp = Date.now();
         } catch (err) {
-            print(err);
+            logger.error(`Error in postDiscord edit msg: ${err}`);
         }
     } else if (res.stream == null && twitchChannel.messageid != null) {
         // Do delete message code
@@ -212,26 +229,26 @@ function postDiscord(server, twitchChannel, err, res) {
 
             discordChannel.fetchMessage(twitchChannel.messageid).then(
                 message => message.delete().then((message) => {
-                    print(`[${server.name}/${discordChannel.name}] Channel Offline: ${twitchChannel.name}`)
+                    logger.info(`[${server.name}/${discordChannel.name}] Channel Offline: ${twitchChannel.name}`)
                     twitchChannel.messageid = null
                 })
             );
             twitchChannel.online = false;
         } catch (err) {
-            print(err);
+            logger.error(`Error in postDiscord delete msg: ${err}`);
         }
     }
 }
 
 function savechannels() {
-    print("Saving channels to " + channelPath);
+    logger.info("Saving channels to " + channelPath);
     fs.writeFileSync(channelPath, JSON.stringify(client.servers, null, 4));
-    print("Done");
+    logger.info("Done");
 }
 
 function exitHandler(opt, err) {
     if (err) {
-        print(err);
+        logger.error(`Error in exitHandler: ${err}`);
     }
     if (opt.save) {
         savechannels();
@@ -248,6 +265,6 @@ process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
 
 try {
     client.login(discordtoken)
-} catch (error) {
-    print(error);
+} catch (err) {
+    logger.error(`Error in Discord login: ${err}`);
 }
