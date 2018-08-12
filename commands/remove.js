@@ -1,8 +1,7 @@
-const {print} = require('../utils.js');
-
 module.exports = {
     name: 'remove',
     description: 'Remove Twitch channel from broadcast list.',
+    aliases: [],
     args: true,
     usage: '<TwitchChannel>',
     permission: "admin", // not used yet, 
@@ -14,7 +13,6 @@ module.exports = {
 
         if (twitchMember) {
             server.twitchChannels = twitchChannels.filter(channel => channel.name !== twitchMember.name)
-            print(server.twitchChannels);
             message.reply("Removed " + streamer + ".");
         } else {
             message.reply(streamer + " isn't in the list.");

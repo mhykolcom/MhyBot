@@ -1,9 +1,10 @@
 module.exports = {
     name: 'list',
     description: 'List Twitch channels in the broadcast list.',
+    aliases: [],
     args: false,
     usage: '',
-    permission: "user", // not used yet, 
+    permission: "user", 
     execute(client, message, args) {
         // needs twitchChannels in here too!
         var server = client.servers.find(server => server.name === message.guild.name);

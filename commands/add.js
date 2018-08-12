@@ -3,6 +3,7 @@ const { print } = require('../utils.js');
 module.exports = {
     name: 'add',
     description: 'Add Twitch channel from broadcast list.',
+    aliases: [],
     args: true,
     usage: '<TwitchChannel>',
     permission: 'admin',

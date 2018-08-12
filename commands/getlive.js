@@ -1,15 +1,11 @@
 module.exports = {
     name: 'getlive',
-    description: 'Get status of Twitch channel.',
+    description: 'Check if the <user> is live.',
+    aliases: [],
     args: true,
-    usage: '<channel name>',
+    usage: '<TwitchChannel>',
+    permission: 'user',
     execute(client, message, args) {
-        /*const TwitchChannel = message.mentions.users.map(user => {
-            return `${user.username}'s Twitch channel: ${userconnection.name}`;
-        });*/
-
-        
-
-        // message.channel.send(TwitchChannel);
-    },
+        return; // TODO: Implement
+    }
 };

@@ -1,8 +1,7 @@
-const { print } = require('../utils.js');
-
 module.exports = {
     name: 'reload',
     description: 'Reloads a bot command. ',
+    aliases: [],
     args: true,
     usage: '<command>',
     permission: 'botowner',
@@ -13,7 +12,7 @@ module.exports = {
             // command exists
             let command = client.commands.get(commandName);
         } else {
-            return message.reply(`That command does not seem to exist!`);
+            return message.reply("That command does not seem to exist!");
         }
         delete require.cache[require.resolve(`../commands/${commandName}.js`)]; // removes the code cache.
 
