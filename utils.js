@@ -8,10 +8,10 @@ exports.fancyTimeFormat = (time) => {
 
     if (hrs > 1) {
         ret += "" + hrs + " hours"
-        if (mins > 1) ret += ", "
+        if (mins > 0) ret += ", "
     } else if (hrs == 1) {
         ret += "" + hrs + " hour"
-        if (mins > 1) ret += ", "
+        if (mins > 0) ret += ", "
     }
 
     if (mins > 1) {

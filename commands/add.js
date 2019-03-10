@@ -1,9 +1,7 @@
-const { print } = require('../utils.js');
-
 module.exports = {
     name: 'add',
     category: "Twitch",
-    description: 'Add Twitch channel from broadcast list.',
+    description: 'Add Twitch channel to broadcast list.',
     aliases: ['a'],
     args: true,
     usage: '<TwitchChannel>',
@@ -18,8 +16,6 @@ module.exports = {
             return message.reply(streamer + " is already in the list.");
 
         client.twitchapi.users.usersByName({ users: streamer }, (err, res) => {
-            if (err)
-                print(err);
             if (!res)
                 return message.reply("API error finding user, rate limited: " + streamer)
 

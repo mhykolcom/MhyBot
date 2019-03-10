@@ -38,6 +38,7 @@ const
 const { discordtoken, twitchtoken } = require('./config/config.json');
 client.twitchapi = require('twitch-api-v5');
 var moment = require('moment');
+client.servers = []
 client.twitchapi.clientID = twitchtoken;
 //client.twitchapi.debug = true;
 client.commands = new Discord.Collection();
@@ -50,7 +51,7 @@ for (const file of commandFiles) {
     client.commands.set(command.name, command);
 }
 
-
+logger.info("Connecting to Discord...");
 client.on('ready', () => {
     logger.info("Logged in to Discord");
     logger.info("Reading file: " + channelPath);
@@ -65,22 +66,22 @@ client.on('ready', () => {
 
 client.on('message', message => {
     let index = indexOfObjectByName(client.servers, message.guild.name);
+    if (index == -1) {
+        client.servers.push({
+            name: message.guild.name,
+            lastPrefix: "!", prefix: "~",
+            role: "botadmin", discordChannels: [],
+            twitchChannels: []
+        });
+        index = client.servers.length - 1;
+    }
     var server = client.servers[index];
-
     if (!message.content.startsWith(server.prefix) || message.author.bot) return;
 
     const args = message.content.slice(server.prefix.length).split(/ +/);
     const commandName = args.shift().toLowerCase();
 
-    if (index == -1) {
-        client.servers.push({
-            name: message.guild.name,
-            lastPrefix: "!", prefix: "~",
-            role: "botadmin", discordChannel: [],
-            twitchChannels: []
-        });
-        index = client.servers.length - 1;
-    }
+    
 
     const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
@@ -136,15 +137,19 @@ function indexOfObjectByName(array, value) {
 }
 
 function tick() {
-    client.servers.forEach((server) => {
-        try {
-            client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
-        } catch (err) {
-            logger.error(`Error in tick: ${err}`);
-        }
-    })
-    savechannels();
-    logger.info("Tick happened!")
+    try {
+        client.servers.forEach((server) => {
+            try {
+                client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
+            } catch (err) {
+                logger.error(`Error in tick: ${err}`);
+            }
+        })
+        logger.info("Tick happened!")
+        savechannels();
+    } catch(err) {
+        logger.error(`Error in tick: ${err}`)
+    }
 }
 
 function getChannelInfo(server, err, res) {
@@ -225,7 +230,7 @@ function postDiscord(server, twitchChannel, err, res) {
         try {
             const guild = client.guilds.find("name", server.name);
             const discordChannel = guild.channels.find("name", server.discordChannels[0]);
-            const discordEmbed = createEmbed(server, twitchChannel, res);
+            //const discordEmbed = createEmbed(server, twitchChannel, res);
 
             discordChannel.fetchMessage(twitchChannel.messageid).then(
                 message => message.delete().then((message) => {
@@ -258,7 +263,7 @@ function exitHandler(opt, err) {
     }
 }
 
-process.on("exit", exitHandler.bind(null, { save: true }));
+process.on("exit", exitHandler.bind(null, { exit: true }));
 process.on("SIGINT", exitHandler.bind(null, { exit: true }));
 process.on("SIGTERM", exitHandler.bind(null, { exit: true }));
 process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
