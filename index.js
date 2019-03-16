@@ -35,7 +35,7 @@ const
     timeout = 4 * 60 * 1000,
     { fancyTimeFormat } = require('./utils.js');
 
-const { discordtoken, twitchtoken, mdb_address, mdb_port, mdb_database } = require('./config/config.json');
+const { discordtoken, twitchtoken, mdb_address, mdb_port, mdb_username, mdb_password } = require('./config/config.json');
 client.twitchapi = require('twitch-api-v5');
 var moment = require('moment');
 client.servers = []
@@ -43,7 +43,7 @@ client.twitchapi.clientID = twitchtoken;
 //client.twitchapi.debug = true;
 client.commands = new Discord.Collection();
 var MongoClient = require('mongodb').MongoClient
-var MongoUrl = "mongodb://" + mdb_address + ":" + mdb_port + "/";
+var MongoUrl = "mongodb://" + mdb_username + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "/";
 client.MongoClient = MongoClient
 client.MongoUrl = MongoUrl
 logger.info(MongoUrl);
