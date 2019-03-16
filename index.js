@@ -46,7 +46,6 @@ var MongoClient = require('mongodb').MongoClient
 var MongoUrl = "mongodb://" + mdb_username + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "/";
 client.MongoClient = MongoClient
 client.MongoUrl = MongoUrl
-logger.info(MongoUrl);
 
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
