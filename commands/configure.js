@@ -7,7 +7,8 @@ module.exports = {
     usage: '<setting> <value>',
     permission: 'owner',
     execute(client, message, args) {
-        var server = client.servers.find(server => server.name === message.guild.name);
+        //var server = client.servers.find(server => server.name === message.guild.name);
+        var server = client.currentserver;
         var twitchChannels = server.twitchChannels;
 
         if (!args[0]) {
@@ -17,7 +18,6 @@ module.exports = {
             if (!args[1]) {
                 return message.reply("Please specify an argument");
             } else {
-                server.lastPrefix = server.prefix;
                 server.prefix = newPrefix;
                 return message.reply(`Changed prefix to \`${server.prefix}\``);
             }
@@ -29,12 +29,19 @@ module.exports = {
                 return message.reply(`Changed role to \`${server.role}\``);
             }
 
-        } else if (args[0] == "channel") {
+        } else if (args[0] == "livechannel") {
             if (!args[1]) {
                 return message.reply("Please specify an argument");
             } else {
-                server.discordChannels[0] = args[1];
-                return message.reply(`Announcing channel set to \`${args[1]}\``)
+                server.discordLiveChannel = args[1];
+                return message.reply(`Live announcing channel set to \`${args[1]}\``)
+            }
+        } else if (args[0] == "vodchannel") {
+            if (!args[1]) {
+                return message.reply("Please specify an argument");
+            } else {
+                server.discordVODChannel = args[1];
+                return message.reply(`Vod announcing channel set to \`${args[1]}\``)
             }
         }
     }

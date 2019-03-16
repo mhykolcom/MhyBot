@@ -8,7 +8,8 @@ module.exports = {
     permission: "admin", // not used yet, 
     execute(client, message, args) {
         const streamer = args[0];
-        var server = client.servers.find(server => server.name === message.guild.name);
+        //var server = client.servers.find(server => server.name === message.guild.name);
+        var server = client.currentserver;
         var twitchChannels = server.twitchChannels;
         const twitchMember = twitchChannels.find(channel => channel.name.toLowerCase() === streamer.toLowerCase());
 

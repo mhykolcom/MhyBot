@@ -1,4 +1,7 @@
 {
     "discordtoken": "",
-    "twitchtoken": ""
+    "twitchtoken": "",
+    "mdb_address": "localhost",
+    "mdb_port": "27017",
+    "mdb_database": "mhybot"
 }

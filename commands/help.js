@@ -10,8 +10,8 @@ module.exports = {
         // If no specific command is called, show all filtered commands.
         if (!args[0]) {
             // get server settings
-            var server = client.servers.find(server => server.name === message.guild.name);
-
+            //var server = client.servers.find(server => server.name === message.guild.name);
+            var server = client.currentserver;
             const myCommands = client.commands;
 
             // Here we have to get the command names only, and we use that array to get the longest name.

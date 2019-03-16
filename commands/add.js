@@ -8,7 +8,8 @@ module.exports = {
     permission: 'admin',
     execute(client, message, args) {
         const streamer = args[0];
-        var server = client.servers.find(server => server.name === message.guild.name);
+        //var server = client.servers.find(server => server.name === message.guild.name);
+        var server = client.currentserver;
         var twitchChannels = server.twitchChannels;
         var twitchMember = twitchChannels.find(channel => channel.name === streamer);
 
@@ -24,7 +25,13 @@ module.exports = {
                     name: streamer, timestamp: 0,
                     online: false
                 });
-                message.reply("Added " + streamer + ".");
+                client.MongoClient.connect(client.MongoUrl, function(err, db){
+                    var dbo = db.db("mhybot");
+                    dbo.collection("servers").insertOne({"twitchchannels.name": streamer, "twitchchannels.timestamp": 0, "twitchchannels.online": false}, function(err, res){
+                        if (err) throw err;
+                        message.reply("Added " + streamer + ".");
+                    })
+                })
                 //tick();
             } else {
                 message.reply(streamer + " doesn't seem to exist.");
