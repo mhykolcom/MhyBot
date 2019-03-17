@@ -17,26 +17,28 @@ module.exports = {
             return message.reply(streamer + " is already in the list.");
 
         client.twitchapi.users.usersByName({ users: streamer }, (err, res) => {
-            if (!res)
-                return message.reply("API error finding user, rate limited: " + streamer)
+            //if (!res) { return message.reply("API error finding user, rate limited: " + streamer) }
+            if (err) return err;
 
-            if (res.users.length > 0) {
-                twitchChannels.push({
-                    name: streamer, timestamp: 0,
-                    online: false
-                });
-                client.MongoClient.connect(client.MongoUrl, function(err, db){
-                    var dbo = db.db("mhybot");
-                    dbo.collection("servers").insertOne({"twitchchannels.name": streamer, "twitchchannels.timestamp": 0, "twitchchannels.online": false}, function(err, res){
+            if (res) {
+                if (res.users.length > 0) {
+                    twitchChannels.push({
+                        name: streamer, timestamp: 0,
+                        online: false
+                    });
+                    client.MongoClient.connect(client.MongoUrl, function (err, db) {
                         if (err) throw err;
-                        message.reply("Added " + streamer + ".");
+                        var dbo = db.db("mhybot")
+                        dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer, online: false, messageid: null } } }, function (err, res) {
+                            if (err) throw err;
+                            message.reply("Added " + streamer + ".");
+                        })
+
                     })
-                })
-                //tick();
-            } else {
-                message.reply(streamer + " doesn't seem to exist.");
+                } else {
+                    message.reply(streamer + " doesn't seem to exist.");
+                }
             }
         });
-
     }
 };

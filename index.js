@@ -33,7 +33,7 @@ const
     commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js')),
     channelPath = __dirname + "/channels.json",
     timeout = 4 * 60 * 1000,
-    { fancyTimeFormat } = require('./utils.js');
+    { fancyTimeFormat, fancyDurationFormat } = require('./utils.js');
 
 const { discordtoken, twitchtoken, mdb_address, mdb_port } = require('./config/config.json');
 client.twitchapi = require('twitch-api-v5');
@@ -67,7 +67,7 @@ client.on('ready', () => {
 });
 
 client.on('message', message => {
-    MongoClient.connect(MongoUrl, function(err,db){
+    MongoClient.connect(MongoUrl, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mhybot")
         client.dbo = dbo;
@@ -75,17 +75,17 @@ client.on('message', message => {
             name: message.guild.name,
             id: message.guild.id,
             prefix: "~",
-            role: "botadmin", 
+            role: "botadmin",
             discordLiveChannel: "",
             discordVODChannel: "",
-            twitchChannels: [] 
+            twitchChannels: []
         }
-        dbo.collection("servers").findOne({id: message.guild.id}, function(err,res){
+        dbo.collection("servers").findOne({ id: message.guild.id }, function (err, res) {
             if (err) throw err;
-            if (res.length == 0) {
-                    dbo.collection("servers").insertOne(myobj,function(err, res){
+            if (!res) {
+                dbo.collection("servers").insertOne(myobj, function (err, res) {
                     if (err) throw err;
-                    logger.info("New server added to database")
+                    logger.info(`[${message.guild.id}] New server added to database`)
                 })
                 client.currentserver = myobj;
             } else {
@@ -93,36 +93,36 @@ client.on('message', message => {
             }
             var server = client.currentserver;
             if (!message.content.startsWith(server.prefix) || message.author.bot) return;
-        
+
             const args = message.content.slice(server.prefix.length).split(/ +/);
             const commandName = args.shift().toLowerCase();
             const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
-        
+
             if (!command) return;
-        
+
             let permissions = ['user'];
-        
+
             if (message.member.roles.exists("name", server.role)) {
                 permissions.push('admin');
             }
-        
+
             if (message.guild.owner == message.member) {
                 permissions.push('admin');
                 permissions.push('owner');
             }
-        
+
             if (message.member.id == "83002230331932672") {
                 permissions.push('admin');
                 permissions.push('owner');
                 permissions.push('botowner');
             }
-        
+
             if (command.permission && !(permissions.indexOf(command.permission) > -1)) {
                 // user not allowed...
                 message.reply(`You do not have the required permission \`${command.permission}\` to run this command.`);
                 return;
             }
-        
+
             if (command.args && !args.length) {
                 let reply = `You didn't provide any arguments, ${message.author}!`;
                 if (command.usage) {
@@ -130,7 +130,7 @@ client.on('message', message => {
                 }
                 return message.channel.send(reply);
             }
-        
+
             try {
                 //command.execute(client, message, args);
                 message.reply('commands have been disabled temporarily.');
@@ -141,30 +141,27 @@ client.on('message', message => {
             }
             db.close();
         })
-    }) 
+    })
 });
 
 function tick() {
     try {
-        MongoClient.connect(MongoUrl, function(err, db) {
+        MongoClient.connect(MongoUrl, function (err, db) {
             var dbo = db.db("mhybot");
-            dbo.collection("servers").find().toArray(function(err, result) {
-                //console.log(result[0].twitchChannels[0]);
+            dbo.collection("servers").find().toArray(function (err, result) {
                 dbo.collection("servers");
                 result.forEach((server) => {
                     try {
-                        //console.log(server.twitchChannels.length);
                         client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
                     } catch (err) {
                         logger.error(`Error in tick: ${err}`);
                     }
                 })
                 db.close();
-             })
+            })
         })
         logger.info("Tick happened!")
-        //savechannels();
-    } catch(err) {
+    } catch (err) {
         logger.error(`Error in tick: ${err}`)
     }
 }
@@ -176,6 +173,7 @@ function getChannelInfo(server, err, res) {
         channelID = user._id;
         twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
         client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
+        client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
     })
 }
 
@@ -198,17 +196,71 @@ function createEmbed(server, twitchChannel, res) {
     return embed;
 }
 
+function createVODEmbed(server, twitchChannel, res) {
+    // Create the embed code
+    vod = res.videos[0]
+    // Limit description to 200 characters
+    if (vod.description.length > 199) {
+        vod.description = vod.description.substring(0, 199) + "[...]"
+    }
+    var embed = new Discord.RichEmbed()
+        .setColor("#6441A5")
+        .setTitle(vod.title)
+        .setURL(vod.url)
+        .setDescription("**" + vod.channel.display_name + "**\n" + vod.description.replace("/n/n", ""))
+        .setImage(vod.preview.large)
+        .addField("Game", vod.game, true)
+        .addField("Length", fancyDurationFormat(vod.length), true)
+    return embed;
+}
+
+function postVOD(server, twitchChannel, err, res) {
+    if (!res) return;
+    if (err) logger.error(`Error in postVOD: ${err}`);
+    if (server.discordVODChannel.length == 0) return;
+    if (res._total == 0) return;
+    MongoClient.connect(MongoUrl, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db("mhybot");
+        var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
+        dbo.collection("servers").findOne(myquery, function (err, dbres) {
+            if (err) return err;
+            if (!dbres.twitchChannels[0].voddate) { dbres.twitchChannels[0].voddate = 0 }
+            if (dbres.twitchChannels[0].voddate < moment(res.videos[0].created_at)) {
+                try {
+                    const guild = client.guilds.find("id", server.id);
+                    const discordChannel = guild.channels.find("name", server.discordVODChannel);
+                    const discordEmbed = createVODEmbed(server, twitchChannel, res);
+                    discordChannel.send(discordEmbed).then(
+                        (message) => {
+                            logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${res.videos[0].title}`)
+                            // Write to DB latest video timestamp to prevent posting same video every tick
+                            newvalues = { $set: { "twitchChannels.$.voddate": moment(res.videos[0].created_at) } }
+                            dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
+                                if (err) throw err;
+                                db.close();
+                            })
+                        }
+                    )
+                } catch (err) {
+                    logger.error(`Error in postVOD: ${err}`);
+                }
+            }
+        })
+    })
+}
 
 function postDiscord(server, twitchChannel, err, res) {
     if (!res) return;
     if (err) logger.error(`Error in postDiscord: ${err}`);
+    if (!server.discordLiveChannel) return;
     if (server.discordLiveChannel.length == 0) return;
 
     if (res.stream != null && twitchChannel.messageid == null) {
         // Do new message code
         try {
-            
-            const guild = client.guilds.find("name", server.name);
+
+            const guild = client.guilds.find("id", server.id);
             const discordChannel = guild.channels.find("name", server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
 
@@ -216,12 +268,12 @@ function postDiscord(server, twitchChannel, err, res) {
                 (message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Now Live: ${twitchChannel.name}`)
                     // Write to DB messageid
-                    MongoClient.connect(MongoUrl, function(err,db) {
+                    MongoClient.connect(MongoUrl, function (err, db) {
                         if (err) throw err;
                         var dbo = db.db("mhybot");
                         var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
-                        var newvalues = { $set: {"twitchChannels.$.messageid": message.id, "twitchChannels.$.online": true} }
-                        dbo.collection("servers").updateOne(myquery, newvalues, function(err, res){
+                        var newvalues = { $set: { "twitchChannels.$.messageid": message.id, "twitchChannels.$.online": true } }
+                        dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
                             if (err) throw err;
                             db.close();
                         })
@@ -238,7 +290,7 @@ function postDiscord(server, twitchChannel, err, res) {
             const guild = client.guilds.find("name", server.name);
             const discordChannel = guild.channels.find("name", server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
-            
+
             discordChannel.fetchMessage(twitchChannel.messageid).then(
                 message => message.edit(discordEmbed).then((message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
@@ -257,12 +309,12 @@ function postDiscord(server, twitchChannel, err, res) {
             discordChannel.fetchMessage(twitchChannel.messageid).then(
                 message => message.delete().then((message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Offline: ${twitchChannel.name}`)
-                    MongoClient.connect(MongoUrl, function(err,db) {
+                    MongoClient.connect(MongoUrl, function (err, db) {
                         if (err) throw err;
                         var dbo = db.db("mhybot");
                         var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
-                        var newvalues = { $set: {"twitchChannels.$.messageid": null, "twitchChannels.$.online": false} }
-                        dbo.collection("servers").updateOne(myquery, newvalues, function(err, res){
+                        var newvalues = { $set: { "twitchChannels.$.messageid": null, "twitchChannels.$.online": false } }
+                        dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
                             if (err) throw err;
                             db.close();
                         })
