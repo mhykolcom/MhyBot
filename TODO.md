@@ -6,3 +6,4 @@ Todo:
     - VODs
     - Live
 - Twitch VOD Options (Include Archive, Highlight, VOD)
+- Option to ping @here on message
