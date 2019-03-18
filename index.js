@@ -77,8 +77,8 @@ client.on('message', message => {
             id: message.guild.id,
             prefix: "~",
             role: "botadmin",
-            discordLiveChannel: "",
-            discordVODChannel: "",
+            discordLiveChannel: null,
+            discordVODChannel: null,
             twitchChannels: []
         }
         dbo.collection("servers").findOne({ id: message.guild.id }, function (err, res) {
@@ -221,37 +221,35 @@ function postVOD(server, twitchChannel, err, res) {
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
     if (err) logger.error(`Error in postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
-    if (server.discordVODChannel) {
-        MongoClient.connect(MongoUrl, function (err, db) {
-            if (err) throw err;
-            var dbo = db.db("mhybot");
-            var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
-            dbo.collection("servers").findOne(myquery, function (err, dbres) {
-                if (err) return err;
-                if (!dbres.twitchChannels[0].voddate) { dbres.twitchChannels[0].voddate = 0 }
-                if (dbres.twitchChannels[0].voddate < moment(res.videos[0].created_at)) {
-                    try {
-                        const guild = client.guilds.find("id", server.id);
-                        const discordChannel = guild.channels.find("name", server.discordVODChannel);
-                        const discordEmbed = createVODEmbed(server, twitchChannel, res);
-                        discordChannel.send(discordEmbed).then(
-                            (message) => {
-                                logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${res.videos[0].title}`)
-                                // Write to DB latest video timestamp to prevent posting same video every tick
-                                newvalues = { $set: { "twitchChannels.$.voddate": moment(res.videos[0].created_at) } }
-                                dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
-                                    if (err) throw err;
-                                    db.close();
-                                })
-                            }
-                        )
-                    } catch (err) {
-                        logger.error(`Error in postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
-                    }
+    MongoClient.connect(MongoUrl, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db("mhybot");
+        var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
+        dbo.collection("servers").findOne(myquery, function (err, dbres) {
+            if (err) return err;
+            if (!dbres.twitchChannels[0].voddate) { dbres.twitchChannels[0].voddate = 0 }
+            if (dbres.twitchChannels[0].voddate < moment(res.videos[0].created_at)) {
+                try {
+                    const guild = client.guilds.find("id", server.id);
+                    const discordChannel = guild.channels.find("name", server.discordVODChannel);
+                    const discordEmbed = createVODEmbed(server, twitchChannel, res);
+                    discordChannel.send(discordEmbed).then(
+                        (message) => {
+                            logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${res.videos[0].title}`)
+                            // Write to DB latest video timestamp to prevent posting same video every tick
+                            newvalues = { $set: { "twitchChannels.$.voddate": moment(res.videos[0].created_at) } }
+                            dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
+                                if (err) throw err;
+                                db.close();
+                            })
+                        }
+                    )
+                } catch (err) {
+                    logger.error(`Error in postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
                 }
-            })
+            }
         })
-    }
+    })
 }
 
 function postDiscord(server, twitchChannel, err, res) {
@@ -268,7 +266,7 @@ function postDiscord(server, twitchChannel, err, res) {
             const discordChannel = guild.channels.find("name", server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
 
-            discordChannel.send("Test" + discordEmbed).then(
+            discordChannel.send(discordEmbed).then(
                 (message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Now Live: ${twitchChannel.name}`)
                     // Write to DB messageid
