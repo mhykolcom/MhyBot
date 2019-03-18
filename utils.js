@@ -35,14 +35,14 @@ exports.fancyDurationFormat = (time) => {
     var ret = "";
 
     if (hrs > 0) {
-        ret += "" + hrs + ":"
+        ret += "" + hrs + "h "
     } 
 
     if (mins > 0) {
-        ret += "" + mins + ":"
+        ret += "" + mins + "m "
     }
    
-    ret += secs
+    ret += secs + "s "
     
     return ret;
 }

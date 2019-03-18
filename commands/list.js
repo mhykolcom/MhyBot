@@ -7,8 +7,9 @@ module.exports = {
     usage: '',
     permission: "user", 
     execute(client, message, args) {
+        message.reply("List is currently disabled.")
         // needs twitchChannels in here too!
-        var server = client.servers.find(server => server.name === message.guild.name);
+        /*var server = client.servers.find(server => server.name === message.guild.name);
         var twitchChannels = server.twitchChannels;
         
         let msg = "\n";
@@ -25,6 +26,6 @@ module.exports = {
             message.reply("The list is empty.");
         } else {
             message.reply(msg.replace(/_/g, "\\_"));
-        }
+        }*/
     },
 };

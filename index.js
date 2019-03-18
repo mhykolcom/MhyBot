@@ -46,6 +46,7 @@ var MongoClient = require('mongodb').MongoClient
 var MongoUrl = "mongodb://" + mdb_address + ":" + mdb_port + "/";
 client.MongoClient = MongoClient
 client.MongoUrl = MongoUrl
+client.logger = logger
 
 
 for (const file of commandFiles) {
@@ -85,7 +86,7 @@ client.on('message', message => {
             if (!res) {
                 dbo.collection("servers").insertOne(myobj, function (err, res) {
                     if (err) throw err;
-                    logger.info(`[${message.guild.id}] New server added to database`)
+                    logger.info(`[${message.guild.name}] New server added to database`)
                 })
                 client.currentserver = myobj;
             } else {
@@ -132,8 +133,8 @@ client.on('message', message => {
             }
 
             try {
-                //command.execute(client, message, args);
-                message.reply('commands have been disabled temporarily.');
+                command.execute(client, message, args);
+                //message.reply('commands have been disabled temporarily.');
             }
             catch (error) {
                 logger.error(error);
@@ -217,6 +218,7 @@ function createVODEmbed(server, twitchChannel, res) {
 function postVOD(server, twitchChannel, err, res) {
     if (!res) return;
     if (err) logger.error(`Error in postVOD: ${err}`);
+    if (!server.discordVODChannel) return;
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
     MongoClient.connect(MongoUrl, function (err, db) {

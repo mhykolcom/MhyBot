@@ -32,8 +32,9 @@ module.exports = {
                         dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer, online: false, messageid: null } } }, function (err, res) {
                             if (err) throw err;
                             message.reply("Added " + streamer + ".");
+                            client.logger.info(`[${server.name}] Channel Added: ${streamer}`)
                         })
-
+                        db.close();
                     })
                 } else {
                     message.reply(streamer + " doesn't seem to exist.");

@@ -1,5 +1,7 @@
 Todo:
-- Fix commands to work with Mongo
+- Rewrite List command to:
+    - Sort by Online then Alphabetize
+    - Look pretty
 - YouTube Support!
     - VODs
     - Live
