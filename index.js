@@ -220,7 +220,7 @@ function postVOD(server, twitchChannel, err, res) {
     if (!server.discordVODChannel) return;
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
-    if (err) logger.error(`Error in postVOD: ${err} | ${twitchChannel.name}`);
+    if (err) logger.error(`Error in postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
     MongoClient.connect(MongoUrl, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mhybot");
@@ -245,7 +245,7 @@ function postVOD(server, twitchChannel, err, res) {
                         }
                     )
                 } catch (err) {
-                    logger.error(`Error in postVOD: ${err}`);
+                    logger.error(`Error in postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
                 }
             }
         })
