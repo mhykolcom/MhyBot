@@ -217,10 +217,10 @@ function createVODEmbed(server, twitchChannel, res) {
 
 function postVOD(server, twitchChannel, err, res) {
     if (!res) return;
-    if (err) logger.error(`Error in postVOD: ${err}`);
     if (!server.discordVODChannel) return;
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
+    if (err) logger.error(`Error in postVOD: ${err}`);
     MongoClient.connect(MongoUrl, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mhybot");
@@ -266,7 +266,7 @@ function postDiscord(server, twitchChannel, err, res) {
             const discordChannel = guild.channels.find("name", server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
 
-            discordChannel.send(discordEmbed).then(
+            discordChannel.send("Test" + discordEmbed).then(
                 (message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Now Live: ${twitchChannel.name}`)
                     // Write to DB messageid
