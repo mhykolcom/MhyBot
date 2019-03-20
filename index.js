@@ -60,9 +60,6 @@ for (const file of commandFiles) {
 logger.info("Connecting to Discord...");
 client.on('ready', () => {
     logger.info("Logged in to Discord");
-    /*logger.info("Reading file: " + channelPath);
-    var file = fs.readFileSync(channelPath, { encoding: "utf-8" });
-    client.servers = JSON.parse(file);*/
     tick();
     setInterval(tick, timeout);
 });
@@ -194,10 +191,7 @@ function createEmbed(server, twitchChannel, res) {
         .setThumbnail(res.stream.channel.logo)
         .addField("Viewers", res.stream.viewers, true)
         .addField("Uptime", fancyTimeFormat(twitchChannel.uptime), true)
-        //.addField("Mention", "<@&171626696104083456>", true)
-        //.setFooter("<@&557372056887623681>")
         .setTimestamp()
-    //embed += "<@&557372056887623681>"
     return embed;
 }
 
@@ -345,12 +339,6 @@ function postDiscord(server, twitchChannel, err, res) {
             logger.error(`Error in postDiscord delete msg: ${err}`);
         }
     }
-}
-
-function savechannels() {
-    logger.info("Saving channels to " + channelPath);
-    fs.writeFileSync(channelPath, JSON.stringify(client.servers, null, 4));
-    logger.info("Done");
 }
 
 function exitHandler(opt, err) {
