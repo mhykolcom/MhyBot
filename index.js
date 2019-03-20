@@ -193,42 +193,54 @@ function createEmbed(server, twitchChannel, res) {
         //.setImage(res.stream.preview.large)
         .setThumbnail(res.stream.channel.logo)
         .addField("Viewers", res.stream.viewers, true)
-        .addField("Uptime", fancyTimeFormat(twitchChannel.uptime), true);
+        .addField("Uptime", fancyTimeFormat(twitchChannel.uptime), true)
+        //.addField("Mention", "<@&171626696104083456>", true)
+        //.setFooter("<@&557372056887623681>")
+        .setTimestamp()
+    //embed += "<@&557372056887623681>"
     return embed;
 }
 
 function createVODEmbed(server, twitchChannel, res) {
-    // Create the embed code
-    vod = res.videos[0]
-    // Limit description to 200 characters
-    if (vod.description.length > 199) {
-        vod.description = vod.description.substring(0, 199) + "[...]"
+    try {
+        // Create the embed code
+        vod = res.videos[0]
+        //console.log(vod)
+        // Limit description to 200 characters
+        if (!vod.description) { vod.description = "" }
+        if (vod.description.length > 199) {
+            vod.description = vod.description.substring(0, 199) + "[...]"
+        }
+        var embed = new Discord.RichEmbed()
+            .setColor("#6441A5")
+            .setTitle(vod.title)
+            .setURL(vod.url)
+            .setDescription("**" + vod.channel.display_name + "**\n" + vod.description.replace("/n/n", ""))
+            .setImage(vod.preview.large)
+            .addField("Game", vod.game, true)
+            .addField("Length", fancyDurationFormat(vod.length), true)
+            .setFooter("Posted on: " + vod.published_at)
+        return embed;
+    } catch (err) {
+        logger.error(`Error in createVODEmbed: ${err} | ${twitchChannel.name} | ${server.name}`);
     }
-    var embed = new Discord.RichEmbed()
-        .setColor("#6441A5")
-        .setTitle(vod.title)
-        .setURL(vod.url)
-        .setDescription("**" + vod.channel.display_name + "**\n" + vod.description.replace("/n/n", ""))
-        .setImage(vod.preview.large)
-        .addField("Game", vod.game, true)
-        .addField("Length", fancyDurationFormat(vod.length), true)
-    return embed;
 }
 
 function postVOD(server, twitchChannel, err, res) {
     if (!res) return;
+    //console.log(server)
     if (!server.discordVODChannel) return;
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
-    if (err) logger.error(`Error in postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
+    if (err) logger.error(`Error in start of postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
     MongoClient.connect(MongoUrl, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mhybot");
         var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
         dbo.collection("servers").findOne(myquery, function (err, dbres) {
             if (err) return err;
-            if (!dbres.twitchChannels[0].voddate) { dbres.twitchChannels[0].voddate = 0 }
-            if (dbres.twitchChannels[0].voddate < moment(res.videos[0].created_at)) {
+            //if (!dbres.twitchChannels[0].voddate) { dbres.twitchChannels[0].voddate = 0 }
+            if (!dbres.twitchChannels[0].voddate || moment(dbres.twitchChannels[0].voddate) < moment(res.videos[0].created_at)) {
                 try {
                     const guild = client.guilds.find("id", server.id);
                     const discordChannel = guild.channels.find("name", server.discordVODChannel);
@@ -237,7 +249,8 @@ function postVOD(server, twitchChannel, err, res) {
                         (message) => {
                             logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${res.videos[0].title}`)
                             // Write to DB latest video timestamp to prevent posting same video every tick
-                            newvalues = { $set: { "twitchChannels.$.voddate": moment(res.videos[0].created_at) } }
+
+                            newvalues = { $set: { "twitchChannels.$.voddate": res.videos[0].created_at } }
                             dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
                                 if (err) throw err;
                                 db.close();
@@ -245,7 +258,7 @@ function postVOD(server, twitchChannel, err, res) {
                         }
                     )
                 } catch (err) {
-                    logger.error(`Error in postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
+                    logger.error(`Error in end of postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
                 }
             }
         })
@@ -258,6 +271,9 @@ function postDiscord(server, twitchChannel, err, res) {
     if (!server.discordLiveChannel) return;
     if (server.discordLiveChannel.length == 0) return;
 
+    // Add logic to set this variable based on option in DB
+    var notification = ""
+
     if (res.stream != null && twitchChannel.messageid == null) {
         // Do new message code
         try {
@@ -266,13 +282,15 @@ function postDiscord(server, twitchChannel, err, res) {
             const discordChannel = guild.channels.find("name", server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
 
-            discordChannel.send(discordEmbed).then(
+            discordChannel.send(notification).then(
                 (message) => {
+                    message.edit(discordEmbed).then((message) => { message.edit(notification) })
                     logger.info(`[${server.name}/${discordChannel.name}] Now Live: ${twitchChannel.name}`)
                     // Write to DB messageid
                     MongoClient.connect(MongoUrl, function (err, db) {
                         if (err) throw err;
                         var dbo = db.db("mhybot");
+                        messageid = message.id
                         var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
                         var newvalues = { $set: { "twitchChannels.$.messageid": message.id, "twitchChannels.$.online": true } }
                         dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
@@ -295,8 +313,8 @@ function postDiscord(server, twitchChannel, err, res) {
 
             discordChannel.fetchMessage(twitchChannel.messageid).then(
                 message => message.edit(discordEmbed).then((message) => {
+                    message.edit(notification)
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
-                    twitchChannel.messageid = message.id
                 })
             );
         } catch (err) {
