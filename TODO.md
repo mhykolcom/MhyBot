@@ -6,6 +6,6 @@ Todo:
     - VODs
     - Live
 - Twitch VOD Options (Include Archive, Highlight, VOD)
-- Option to ping @here on message
+- Option to ping on message - IN PROGRESS
 - Option to ~set (or ~s) followed channel setting (EG: ~set Mhykol @here)
 - Option to post Archive VOD after channel goes offline
