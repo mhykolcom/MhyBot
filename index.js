@@ -171,7 +171,7 @@ function getChannelInfo(server, err, res) {
         channelID = user._id;
         twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
         client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
-        client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
+        //client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
     })
 }
 
@@ -239,7 +239,6 @@ function postVOD(server, twitchChannel, err, res) {
                     const guild = client.guilds.find("id", server.id);
                     const discordChannel = guild.channels.find("name", server.discordVODChannel);
                     const discordEmbed = createVODEmbed(server, twitchChannel, res);
-                    console.log(discordEmbed)
                     discordChannel.send(discordEmbed).then(
                         (message) => {
                             logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${res.videos[0].title}`)
