@@ -29,7 +29,13 @@ module.exports = {
                     output += `\u200b\n== ${cat} ==\n`;
                     currentCategory = cat;
                 }
-                output += `${server.prefix}${c.name}${" ".repeat(longest - c.name.length)} :: ${c.description}\n`;
+                if (c.permission == "admin") {
+                    perm = server.role;
+                } else {
+                    perm = c.permission.charAt(0).toUpperCase();
+                }
+                console.log(perm)
+                output += `${server.prefix}${c.name}${" ".repeat(longest - c.name.length)} :: ${c.description} :: ${perm}\n`;
             });
             message.channel.send(output, { code: "asciidoc", split: { char: "\u200b" } });
         } else {

@@ -2,7 +2,7 @@ const { print } = require('../utils.js');
 
 module.exports = {
     name: 'clear',
-    category: "Twitch",
+    category: "Management",
     description: 'Clear specified number of message from chat.',
     aliases: ['prune'],
     args: true,

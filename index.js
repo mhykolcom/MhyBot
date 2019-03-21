@@ -239,6 +239,7 @@ function postVOD(server, twitchChannel, err, res) {
                     const guild = client.guilds.find("id", server.id);
                     const discordChannel = guild.channels.find("name", server.discordVODChannel);
                     const discordEmbed = createVODEmbed(server, twitchChannel, res);
+                    console.log(discordEmbed)
                     discordChannel.send(discordEmbed).then(
                         (message) => {
                             logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${res.videos[0].title}`)
@@ -266,16 +267,18 @@ function postDiscord(server, twitchChannel, err, res) {
     if (server.discordLiveChannel.length == 0) return;
 
     // Add logic to set this variable based on option in DB
-    var notification = ""
+    if (twitchChannel.mention) {
+        var notification = twitchChannel.mention;
+    } else {
+        var notification = "-";
+    }
 
     if (res.stream != null && twitchChannel.messageid == null) {
         // Do new message code
         try {
-
             const guild = client.guilds.find("id", server.id);
             const discordChannel = guild.channels.find("name", server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
-
             discordChannel.send(notification).then(
                 (message) => {
                     message.edit(discordEmbed).then((message) => { message.edit(notification) })

@@ -1,31 +1,35 @@
 module.exports = {
     name: 'list',
-    category: "Twitch",
+    category: "Essentials",
     description: 'List Twitch channels in the broadcast list.',
     aliases: [],
     args: false,
     usage: '',
-    permission: "user", 
+    permission: "admin", 
     execute(client, message, args) {
-        message.reply("List is currently disabled.")
         // needs twitchChannels in here too!
-        /*var server = client.servers.find(server => server.name === message.guild.name);
+        var server = client.currentserver;
         var twitchChannels = server.twitchChannels;
+        twitchName = twitchChannels.map(element => {
+           return element.name;
+        });
+        const longest = twitchName.reduce((long, str) => Math.max(long, str.length), 0);
+
+        // Alphabetize list
+        twitchChannels.sort(function(a, b){ return a.name > b.name});
         
         let msg = "\n";
         for (let i = 0; i < twitchChannels.length; i++) {
-            var streamStatus;
             if (twitchChannels[i].online) {
-                msg += "**" + twitchChannels[i].name + " online**\n";
+                msg += `🔴 ${twitchChannels[i].name}${" ".repeat(longest - twitchChannels[i].name.length)} :: <https://twitch.tv/${twitchChannels[i].name}>\n`;
             } else {
-                streamStatus = "offline";
-                msg += twitchChannels[i].name + " offline\n";
+                msg += `⚫ ${twitchChannels[i].name}${" ".repeat(longest - twitchChannels[i].name.length)} :: <https://twitch.tv/${twitchChannels[i].name}>\n`;
             }
         }
         if (!msg) {
             message.reply("The list is empty.");
         } else {
-            message.reply(msg.replace(/_/g, "\\_"));
-        }*/
+            message.reply("This is the list of streamers I'm following:" + msg.replace(/_/g, "\\_"));
+        }
     },
 };

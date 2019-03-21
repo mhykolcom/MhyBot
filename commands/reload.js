@@ -1,6 +1,6 @@
 module.exports = {
     name: 'reload',
-    category: "Essentials",
+    category: "✺Developer✺",
     description: 'Reloads a bot command. Bot Owner only.',
     aliases: [],
     args: true,

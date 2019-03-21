@@ -1,17 +1,24 @@
 module.exports = {
     name: 'add',
-    category: "Twitch",
+    category: "Management",
     description: 'Add Twitch channel to broadcast list.',
     aliases: ['a'],
     args: true,
-    usage: '<TwitchChannel>',
+    usage: '<TwitchChannel> [mention]',
     permission: 'admin',
     execute(client, message, args) {
         const streamer = args[0];
+        var dmention
         //var server = client.servers.find(server => server.name === message.guild.name);
         var server = client.currentserver;
         var twitchChannels = server.twitchChannels;
         var twitchMember = twitchChannels.find(channel => channel.name === streamer);
+
+        if (args[1]) {
+            dmention = args[1];
+        } else {
+            dmention = null;
+        }
 
         if (twitchMember)
             return message.reply(streamer + " is already in the list.");
@@ -24,12 +31,12 @@ module.exports = {
                 if (res.users.length > 0) {
                     twitchChannels.push({
                         name: streamer, timestamp: 0,
-                        online: false
+                        online: false, dmention
                     });
                     client.MongoClient.connect(client.MongoUrl, function (err, db) {
                         if (err) throw err;
                         var dbo = db.db("mhybot")
-                        dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer, online: false, messageid: null } } }, function (err, res) {
+                        dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer, online: false, messageid: null, mention: dmention } } }, function (err, res) {
                             if (err) throw err;
                             message.reply("Added " + streamer + ".");
                             client.logger.info(`[${server.name}] Channel Added: ${streamer}`)

@@ -1,6 +1,6 @@
 module.exports = {
     name: 'configure',
-    category: "Twitch",
+    category: "Management",
     description: 'Configure the bot for your server. Server Owner only.',
     aliases: ['config'],
     args: false,
