@@ -171,7 +171,7 @@ function getChannelInfo(server, err, res) {
         channelID = user._id;
         twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
         client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
-        //client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
+        client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
     })
 }
 
@@ -191,6 +191,7 @@ function createEmbed(server, twitchChannel, res) {
         .setThumbnail(res.stream.channel.logo)
         .addField("Viewers", res.stream.viewers, true)
         .addField("Uptime", fancyTimeFormat(twitchChannel.uptime), true)
+        .setFooter("Updated")
         .setTimestamp()
     return embed;
 }
@@ -233,8 +234,9 @@ function postVOD(server, twitchChannel, err, res) {
         var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
         dbo.collection("servers").findOne(myquery, function (err, dbres) {
             if (err) return err;
-            //if (!dbres.twitchChannels[0].voddate) { dbres.twitchChannels[0].voddate = 0 }
-            if (!dbres.twitchChannels[0].voddate || moment(dbres.twitchChannels[0].voddate) < moment(res.videos[0].created_at)) {
+            var index = dbres.twitchChannels.findIndex(x => x.name === twitchChannel.name)
+            if (!dbres.twitchChannels[index].voddate) { dbres.twitchChannels[index].voddate = "1970-01-01T00:00:00Z" }
+            if (!dbres.twitchChannels[index].voddate || moment(dbres.twitchChannels[index].voddate) < moment(res.videos[0].created_at)) {
                 try {
                     const guild = client.guilds.find("id", server.id);
                     const discordChannel = guild.channels.find("name", server.discordVODChannel);
@@ -267,9 +269,9 @@ function postDiscord(server, twitchChannel, err, res) {
 
     // Add logic to set this variable based on option in DB
     if (twitchChannel.mention) {
-        var notification = twitchChannel.mention;
+        var notification = `${twitchChannel.mention} - <${res.stream.channel.url}>`;
     } else {
-        var notification = "-";
+        var notification = `<${res.stream.channel.url}>`;
     }
 
     if (res.stream != null && twitchChannel.messageid == null) {
@@ -313,6 +315,9 @@ function postDiscord(server, twitchChannel, err, res) {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
                 })
             );
+
+            //twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === twitchChannel.name.toLowerCase())
+            //client.twitchapi.channels.videos({ channelID: res.stream._id, broadcast_type: "archive", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
         } catch (err) {
             logger.error(`Error in postDiscord edit msg: ${err}`);
         }
@@ -337,6 +342,7 @@ function postDiscord(server, twitchChannel, err, res) {
                     })
                 })
             );
+
         } catch (err) {
             logger.error(`Error in postDiscord delete msg: ${err}`);
         }
