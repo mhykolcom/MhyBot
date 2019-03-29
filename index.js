@@ -150,6 +150,7 @@ function tick() {
                 dbo.collection("servers");
                 result.forEach((server) => {
                     try {
+                        //console.log(server.twitchChannels.map(x => x.name))
                         client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
                     } catch (err) {
                         logger.error(`Error in tick: ${err}`);
@@ -166,12 +167,28 @@ function tick() {
 
 function getChannelInfo(server, err, res) {
     if (!res) return;
+    //console.log(res);
     if (err) logger.error(`Error in getChannelInfo: ${err}`);
+    //console.log(res.users)
     res.users.forEach((user) => {
-        channelID = user._id;
-        twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
-        client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
-        client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
+
+        //console.log(user.name)
+        //channelID = user._id;
+        //console.log(user._id)
+        //twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
+        //client.twitchapi.streams.channel({ channelID: user._id }, function(err, res) {
+        //    console.log(res);
+        //});
+        //client.twitchChannelInfo = twitchChannelInfo
+        //console.log(client.twitchChannelInfo)
+
+        client.twitchapi.streams.channel({ channelID: user._id }, (err, res) => {
+            if (!res) return;
+            twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
+            postDiscord(server, twitchChannelInfo, err, res)
+        });
+        //client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
+        //client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
     })
 }
 
@@ -265,23 +282,31 @@ function postVOD(server, twitchChannel, err, res) {
 }
 
 function postDiscord(server, twitchChannel, err, res) {
+    //console.log(res)
+    //console.log(twitchChannel.name + ": ", res);
+    //console.log(res.stream);
+    //console.log(twitchChannel.messageid)
     if (!res) return;
     if (err) logger.error(`Error in postDiscord: ${err}`);
     if (!server.discordLiveChannel) return;
     if (server.discordLiveChannel.length == 0) return;
 
     // Add logic to set this variable based on option in DB
-    if (twitchChannel.mention) {
-        var notification = `${twitchChannel.mention} - <${res.stream.channel.url}>`;
+    if (!res.stream.channel.url) {
+        return;
     } else {
-        var notification = `<${res.stream.channel.url}>`;
+        if (twitchChannel.mention) {
+            var notification = `${twitchChannel.mention} - <${res.stream.channel.url}>`;
+        } else {
+            var notification = `<${res.stream.channel.url}>`;
+        }
     }
 
     if (res.stream != null && twitchChannel.messageid == null) {
         // Do new message code
         try {
-            const guild = client.guilds.find("id", server.id);
-            const discordChannel = guild.channels.find("name", server.discordLiveChannel);
+            const guild = client.guilds.find(x => x.name === server.name);
+            const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
             discordChannel.send(notification).then(
                 (message) => {
@@ -308,8 +333,8 @@ function postDiscord(server, twitchChannel, err, res) {
     } else if (res.stream != null && twitchChannel.messageid != null) {
         // Do edit message code
         try {
-            const guild = client.guilds.find("name", server.name);
-            const discordChannel = guild.channels.find("name", server.discordLiveChannel);
+            const guild = client.guilds.find(x => x.name === server.name);
+            const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
 
             discordChannel.fetchMessage(twitchChannel.messageid).then(
@@ -324,11 +349,11 @@ function postDiscord(server, twitchChannel, err, res) {
         } catch (err) {
             logger.error(`Error in postDiscord edit msg: ${err}`);
         }
-    } else if (res.stream == null && twitchChannel.messageid != null) {
+    } else if (!res.stream && twitchChannel.messageid != null) {
         // Do delete message code
         try {
-            const guild = client.guilds.find("name", server.name);
-            const discordChannel = guild.channels.find("name", server.discordLiveChannel);
+            const guild = client.guilds.find(x => x.name === server.name);
+            const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
 
             discordChannel.fetchMessage(twitchChannel.messageid).then(
                 message => message.delete().then((message) => {
