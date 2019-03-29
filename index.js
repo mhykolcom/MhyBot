@@ -203,6 +203,8 @@ function createVODEmbed(server, twitchChannel, res) {
         //console.log(vod)
         // Limit description to 200 characters
         if (!vod.description) { vod.description = "" }
+        if (!vod.game) { vod.game = "Unknown" }
+        if (!vod.length) { vod.length = "Unknown" }
         if (vod.description.length > 199) {
             vod.description = vod.description.substring(0, 199) + "[...]"
         }
@@ -217,13 +219,14 @@ function createVODEmbed(server, twitchChannel, res) {
             .setFooter("Posted on: " + vod.published_at)
         return embed;
     } catch (err) {
+        console.log(vod);
         logger.error(`Error in createVODEmbed: ${err} | ${twitchChannel.name} | ${server.name}`);
     }
 }
 
 function postVOD(server, twitchChannel, err, res) {
     if (!res) return;
-    //console.log(server)
+    //console.log(res)
     if (!server.discordVODChannel) return;
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
