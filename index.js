@@ -293,7 +293,6 @@ function postDiscord(server, twitchChannel, err, res) {
 
     // Add logic to set this variable based on option in DB
     if (!res.stream.channel.url) {
-        return;
     } else {
         if (twitchChannel.mention) {
             var notification = `${twitchChannel.mention} - <${res.stream.channel.url}>`;
