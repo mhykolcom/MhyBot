@@ -16,7 +16,7 @@ module.exports = {
         const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
 
         if (twitchMember) {
-            server.twitchChannels = twitchChannels.filter(channel => channel.name !== twitchMember.name)
+            server.twitchChannels = twitchChannels.filter(channel => channel.name !== twitchMember.name.toLowerCase())
             client.MongoClient.connect(client.MongoUrl,{ useNewUrlParser: true }, function (err, db) {
                 if (err) throw err;
                 var dbo = db.db("mhybot")

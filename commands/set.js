@@ -11,7 +11,7 @@ module.exports = {
         //var server = client.servers.find(server => server.name === message.guild.name);
         var server = client.currentserver;
         var twitchChannels = server.twitchChannels;
-        var twitchMember = twitchChannels.find(channel => channel.name === streamer);
+        var twitchMember = twitchChannels.find(channel => channel.name === streamer.toLowerCase());
         if (args[1]) {
             dmention = args[1];
         } else {
@@ -23,7 +23,7 @@ module.exports = {
         client.MongoClient.connect(client.MongoUrl, { useNewUrlParser: true }, function (err, db) {
             if (err) throw err;
             var dbo = db.db("mhybot")
-            dbo.collection("servers").updateOne({ _id: client.currentserver._id, "twitchChannels.name": twitchMember.name }, { $set: { "twitchChannels.$.mention": dmention } }, function (err, res) {
+            dbo.collection("servers").updateOne({ _id: client.currentserver._id, "twitchChannels.name": twitchMember.name.toLowerCase() }, { $set: { "twitchChannels.$.mention": dmention } }, function (err, res) {
                 if (err) throw err;
                 message.reply("Edited " + streamer + ".");
                 client.logger.info(`[${server.name}] Channel Edited: ${streamer}`)

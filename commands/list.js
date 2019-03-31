@@ -17,9 +17,9 @@ module.exports = {
         let msg = "\n";
         for (let i = 0; i < twitchChannels.length; i++) {
             if (twitchChannels[i].online) {
-                msg += `🔴 ${twitchChannels[i].name}\n`;
+                msg += `🔴 ${twitchChannels[i].display_name}\n`;
             } else {
-                msg += `⚫ ${twitchChannels[i].name}\n`;
+                msg += `⚫ ${twitchChannels[i].display_name}\n`;
             }
         }
         if (!msg) {
