@@ -32,9 +32,8 @@ module.exports = {
                 if (c.permission == "admin") {
                     perm = server.role;
                 } else {
-                    perm = c.permission.charAt(0).toUpperCase();
+                    perm = c.permission.charAt(0).toUpperCase() + c.permission.slice(1);
                 }
-                console.log(perm)
                 output += `${server.prefix}${c.name}${" ".repeat(longest - c.name.length)} :: ${c.description} :: ${perm}\n`;
             });
             message.channel.send(output, { code: "asciidoc", split: { char: "\u200b" } });

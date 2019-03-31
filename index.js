@@ -31,7 +31,6 @@ const
     Discord = require('discord.js'),
     client = new Discord.Client(),
     commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js')),
-    channelPath = __dirname + "/channels.json",
     timeout = 4 * 60 * 1000,
     { fancyTimeFormat, fancyDurationFormat } = require('./utils.js');
 
@@ -65,7 +64,7 @@ client.on('ready', () => {
 });
 
 client.on('message', message => {
-    MongoClient.connect(MongoUrl, function (err, db) {
+    MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mhybot")
         client.dbo = dbo;
@@ -76,6 +75,7 @@ client.on('message', message => {
             role: "botadmin",
             discordLiveChannel: null,
             discordVODChannel: null,
+            postarchive: null,
             twitchChannels: []
         }
         dbo.collection("servers").findOne({ id: message.guild.id }, function (err, res) {
@@ -99,8 +99,7 @@ client.on('message', message => {
             if (!command) return;
 
             let permissions = ['user'];
-
-            if (message.member.roles.exists("name", server.role)) {
+            if (message.member.roles.some(x => x.name === server.role)) {
                 permissions.push('admin');
             }
 
@@ -144,7 +143,7 @@ client.on('message', message => {
 
 function tick() {
     try {
-        MongoClient.connect(MongoUrl, function (err, db) {
+        MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
             var dbo = db.db("mhybot");
             dbo.collection("servers").find().toArray(function (err, result) {
                 dbo.collection("servers");
@@ -175,20 +174,20 @@ function getChannelInfo(server, err, res) {
         //console.log(user.name)
         //channelID = user._id;
         //console.log(user._id)
-        //twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
+        twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
         //client.twitchapi.streams.channel({ channelID: user._id }, function(err, res) {
         //    console.log(res);
         //});
         //client.twitchChannelInfo = twitchChannelInfo
         //console.log(client.twitchChannelInfo)
 
-        client.twitchapi.streams.channel({ channelID: user._id }, (err, res) => {
-            if (!res) return;
-            twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
-            postDiscord(server, twitchChannelInfo, err, res)
-        });
-        //client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
-        //client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
+        //client.twitchapi.streams.channel({ channelID: user._id }, (err, res) => {
+        //    if (!res) return;
+        //    twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
+        //    postDiscord(server, twitchChannelInfo, err, res)
+        //});
+        client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
+        client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
     })
 }
 
@@ -208,7 +207,7 @@ function createEmbed(server, twitchChannel, res) {
         .setThumbnail(res.stream.channel.logo)
         .addField("Viewers", res.stream.viewers, true)
         .addField("Uptime", fancyTimeFormat(twitchChannel.uptime), true)
-        .setFooter("Updated")
+        .setFooter("Last updated")
         .setTimestamp()
     return embed;
 }
@@ -243,12 +242,19 @@ function createVODEmbed(server, twitchChannel, res) {
 
 function postVOD(server, twitchChannel, err, res) {
     if (!res) return;
-    //console.log(res)
     if (!server.discordVODChannel) return;
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
+    if (!res.stream) {
+    } else {
+        if (twitchChannel.mention) {
+            var notification = `${twitchChannel.mention} - <${res.stream.channel.url}>`;
+        } else {
+            var notification = `<${res.stream.channel.url}>`;
+        }
+    }
     if (err) logger.error(`Error in start of postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
-    MongoClient.connect(MongoUrl, function (err, db) {
+    MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mhybot");
         var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
@@ -258,8 +264,8 @@ function postVOD(server, twitchChannel, err, res) {
             if (!dbres.twitchChannels[index].voddate) { dbres.twitchChannels[index].voddate = "1970-01-01T00:00:00Z" }
             if (!dbres.twitchChannels[index].voddate || moment(dbres.twitchChannels[index].voddate) < moment(res.videos[0].created_at)) {
                 try {
-                    const guild = client.guilds.find("id", server.id);
-                    const discordChannel = guild.channels.find("name", server.discordVODChannel);
+                    const guild = client.guilds.find(x => x.id === server.id);
+                    const discordChannel = guild.channels.find(x => x.name === server.discordVODChannel);
                     const discordEmbed = createVODEmbed(server, twitchChannel, res);
                     discordChannel.send(discordEmbed).then(
                         (message) => {
@@ -282,10 +288,6 @@ function postVOD(server, twitchChannel, err, res) {
 }
 
 function postDiscord(server, twitchChannel, err, res) {
-    //console.log(res)
-    //console.log(twitchChannel.name + ": ", res);
-    //console.log(res.stream);
-    //console.log(twitchChannel.messageid)
     if (!res) return;
     if (err) logger.error(`Error in postDiscord: ${err}`);
     if (!server.discordLiveChannel) return;
@@ -312,7 +314,7 @@ function postDiscord(server, twitchChannel, err, res) {
                     message.edit(discordEmbed).then((message) => { message.edit(notification) })
                     logger.info(`[${server.name}/${discordChannel.name}] Now Live: ${twitchChannel.name}`)
                     // Write to DB messageid
-                    MongoClient.connect(MongoUrl, function (err, db) {
+                    MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
                         if (err) throw err;
                         var dbo = db.db("mhybot");
                         messageid = message.id
@@ -342,9 +344,6 @@ function postDiscord(server, twitchChannel, err, res) {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
                 })
             );
-
-            //twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === twitchChannel.name.toLowerCase())
-            //client.twitchapi.channels.videos({ channelID: res.stream._id, broadcast_type: "archive", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
         } catch (err) {
             logger.error(`Error in postDiscord edit msg: ${err}`);
         }
@@ -357,7 +356,7 @@ function postDiscord(server, twitchChannel, err, res) {
             discordChannel.fetchMessage(twitchChannel.messageid).then(
                 message => message.delete().then((message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Offline: ${twitchChannel.name}`)
-                    MongoClient.connect(MongoUrl, function (err, db) {
+                    MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
                         if (err) throw err;
                         var dbo = db.db("mhybot");
                         var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
@@ -369,7 +368,11 @@ function postDiscord(server, twitchChannel, err, res) {
                     })
                 })
             );
-
+            twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === twitchChannel.name.toLowerCase())
+            if (!server.postarchive) { server.postarchive = false }
+            if (server.postarchive = true) {
+                client.twitchapi.channels.videos({ channelID: res.stream.channel._id, broadcast_type: "archive", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
+            }
         } catch (err) {
             logger.error(`Error in postDiscord delete msg: ${err}`);
         }

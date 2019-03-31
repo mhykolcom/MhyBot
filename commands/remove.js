@@ -12,12 +12,12 @@ module.exports = {
         var server = client.currentserver;
         var twitchChannels = server.twitchChannels;
         const twitchMember = twitchChannels.find(channel => channel.name.toLowerCase() === streamer.toLowerCase());
-        const guild = client.guilds.find("name", server.name);
-        const discordChannel = guild.channels.find("name", server.discordLiveChannel);
+        const guild = client.guilds.find(x => x.name === server.name);
+        const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
 
         if (twitchMember) {
             server.twitchChannels = twitchChannels.filter(channel => channel.name !== twitchMember.name)
-            client.MongoClient.connect(client.MongoUrl, function (err, db) {
+            client.MongoClient.connect(client.MongoUrl,{ useNewUrlParser: true }, function (err, db) {
                 if (err) throw err;
                 var dbo = db.db("mhybot")
                 dbo.collection("servers").findOne({ _id: client.currentserver._id }, function (err, res) {

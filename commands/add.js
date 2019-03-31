@@ -33,7 +33,7 @@ module.exports = {
                         name: streamer, timestamp: 0,
                         online: false, dmention
                     });
-                    client.MongoClient.connect(client.MongoUrl, function (err, db) {
+                    client.MongoClient.connect(client.MongoUrl,{ useNewUrlParser: true }, function (err, db) {
                         if (err) throw err;
                         var dbo = db.db("mhybot")
                         dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer, online: false, messageid: null, mention: dmention } } }, function (err, res) {
