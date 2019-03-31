@@ -81,7 +81,7 @@ module.exports = {
                             } else if (args[1].toLowerCase() == "false") {
                                 server.postArchive = false;
                             }
-                            dbo.collection("servers").updateOne({ _id: server._id }, { $set: { postarchive: server.postArchive } }, function (err) { if (err) return err; })
+                            dbo.collection("servers").updateOne({ _id: server._id }, { $set: { postArchive: server.postArchive } }, function (err) { if (err) return err; })
                             return message.reply(`Postarchive set to ${args[1]}`)
                         } catch (err) {
                             logger.error(`[${server.name}] Failed to set Postarchive: ${args[1]} | ${err}`)

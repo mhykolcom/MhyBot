@@ -6,6 +6,7 @@ Todo:
 - Remove server from DB if bot is kicked (https://discord.js.org/#/docs/main/stable/class/Guild?scrollTo=leave)
 - Update Twitch API to latest version
 - Fix case sensitivity
+- Fix PostArchive config showing false
 
 Todone: 
 - Option to ping on message
