@@ -187,7 +187,10 @@ function getChannelInfo(server, err, res) {
         //    postDiscord(server, twitchChannelInfo, err, res)
         //});
         client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
-        client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
+        if (!server.postUploads) { server.postUploads = false }
+        if (server.postUploads == true) {
+            client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
+        }
     })
 }
 
@@ -369,8 +372,8 @@ function postDiscord(server, twitchChannel, err, res) {
                 })
             );
             twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === twitchChannel.name.toLowerCase())
-            if (!server.postarchive) { server.postarchive = false }
-            if (server.postarchive = true) {
+            if (!server.postArchive) { server.postArchive = false }
+            if (server.postArchive == true) {
                 client.twitchapi.channels.videos({ channelID: res.stream.channel._id, broadcast_type: "archive", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo));
             }
         } catch (err) {

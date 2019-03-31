@@ -15,15 +15,17 @@ module.exports = {
             var dbo = db.db("mhybot")
             if (args[0]) { args[0] = args[0].toLowerCase(); }
             if (!server.postArchive) { server.postArchive = false; }
-            var longarray = [server.prefix, server.role, server.discordLiveChannel, server.discordVODChannel, server.postArchive.toString()]
+            if (!server.postUploads) { server.postUploads = false; }
+            var longarray = [server.prefix, server.role, server.discordLiveChannel, server.discordVODChannel, server.postArchive.toString(), server.postUploads.toString()]
             longest = longarray.reduce((a, b) => a.length > b.length ? a : b).length;
             if (!args[0]) {
                 output = `= Configuration List =\n\n[Use ${server.prefix}config <option> to set that option]\n\n`
                 output += `prefix      :: ${server.prefix}${" ".repeat(longest - server.prefix.length)} :: \`Your bot command prefix'\n`
-                output += `role        :: ${server.role}${" ".repeat(longest - server.role.length)} :: \`Discord server role that can manage bot.'\n`
+                output += `role        :: ${server.role}${" ".repeat(longest - server.role.length)} :: \`Discord server role that can manage bot (No @).'\n`
                 output += `livechannel :: ${server.discordLiveChannel}${" ".repeat(longest - server.discordLiveChannel.length)} :: \`Discord channel to post live notifications (No #).'\n`
                 output += `vodchannel  :: ${server.discordVODChannel}${" ".repeat(longest - server.discordVODChannel.length)} :: \`Discord channel to post VOD notifications (No #).'\n`
-                output += `postarchive :: ${server.postArchive}${" ".repeat(longest - server.postArchive.toString().length)} :: \`Post stream archive after going offline? A VOD channel must be set.'`
+                output += `postarchive :: ${server.postArchive}${" ".repeat(longest - server.postArchive.toString().length)} :: \`Post stream archive after going offline? A VOD channel must be set.'\n`
+                output += `postuploads :: ${server.postUploads}${" ".repeat(longest - server.postUploads.toString().length)} :: \`Post latest VOD uploads? A VOD channel must be set.'`
                 return message.channel.send(output, { code: "asciidoc" });
             }
             switch (args[0]) {
@@ -67,9 +69,9 @@ module.exports = {
                             return message.reply(`Do not use #channel, just type the channel name`)
                         }
                     }
-                    
+
                     dbo.collection("servers").updateOne({ _id: server._id }, { $set: { discordVODChannel: server.discordVODChannel } }, function (err) { if (err) return err; })
-                    return message.reply(`Vod announcing channel set to \`${args[1]}\``)
+                    return message.reply(`VOD announcing channel set to \`${args[1]}\``)
 
                 case "postarchive":
                     if (args[1].toLowerCase() != "true" && args[1].toLowerCase() != "false") {
@@ -82,10 +84,27 @@ module.exports = {
                                 server.postArchive = false;
                             }
                             dbo.collection("servers").updateOne({ _id: server._id }, { $set: { postArchive: server.postArchive } }, function (err) { if (err) return err; })
-                            return message.reply(`Postarchive set to ${args[1]}`)
+                            return message.reply(`PostArchive set to \`${args[1]}\``)
                         } catch (err) {
-                            logger.error(`[${server.name}] Failed to set Postarchive: ${args[1]} | ${err}`)
-                            return message.reply(`Failed to set Postarchive`)
+                            logger.error(`[${server.name}] Failed to set PostArchive: ${args[1]} | ${err}`)
+                            return message.reply(`Failed to set PostArchive`)
+                        }
+                    }
+                case "postuploads":
+                    if (args[1].toLowerCase() != "true" && args[1].toLowerCase() != "false") {
+                        return message.reply("Must be either TRUE or FALSE")
+                    } else {
+                        try {
+                            if (args[1].toLowerCase() == "true") {
+                                server.postUploads = true;
+                            } else if (args[1].toLowerCase() == "false") {
+                                server.postUploads = false;
+                            }
+                            dbo.collection("servers").updateOne({ _id: server._id }, { $set: { postUploads: server.postUploads } }, function (err) { if (err) return err; })
+                            return message.reply(`PostUploads set to \`${args[1]}\``)
+                        } catch (err) {
+                            logger.error(`[${server.name}] Failed to set PostUploads: ${args[1]} | ${err}`)
+                            return message.reply(`Failed to set PostUploads`)
                         }
                     }
             }
