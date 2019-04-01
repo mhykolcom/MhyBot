@@ -10,6 +10,8 @@ module.exports = {
         //var server = client.servers.find(server => server.name === message.guild.name);
         var server = client.currentserver;
         var twitchChannels = server.twitchChannels;
+        var liveChannel;
+        var vodChannel;
         client.MongoClient.connect(client.MongoUrl, { useNewUrlParser: true }, function (err, db) {
             if (err) throw err;
             var dbo = db.db("mhybot")
@@ -18,8 +20,8 @@ module.exports = {
             if (!server.postUploads) { server.postUploads = false; }
             if (!server.postHighlights) { server.postHighlights = false; }
             if (!server.discordLiveChannel) { liveChannel = "Not Set" } else { liveChannel = server.discordLiveChannel }
-            if (!server.discordVODChannel) { vodChannel = "Not Set" } else { liveChannel = server.discordVODChannel }
-            var longarray = [server.prefix, server.role, server.discordLiveChannel, server.discordVODChannel, server.postArchive.toString(), server.postUploads.toString()]
+            if (!server.discordVODChannel) { vodChannel = "Not Set" } else { vodChannel = server.discordVODChannel }
+            var longarray = [server.prefix, server.role, liveChannel, vodChannel, server.postArchive.toString(), server.postUploads.toString()]
             longest = longarray.reduce((a, b) => a.length > b.length ? a : b).length;
             if (!args[0]) {
                 output = `= Configuration List =\n\n[Use ${server.prefix}config <option> to set that option]\n\n`
