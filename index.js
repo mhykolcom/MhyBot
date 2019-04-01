@@ -190,6 +190,10 @@ function getChannelInfo(server, err, res) {
         if (server.postUploads == true) {
             client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo, "upload"));
         }
+        if (!server.postHighlights) { server.postHighlights = false }
+        if (server.postHighlights == true) {
+            client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "highlight", limit: "4" }, postVOD.bind(this, server, twitchChannelInfo, "highlight"));
+        }
     })
 }
 
@@ -217,7 +221,7 @@ function createEmbed(server, twitchChannel, res) {
 function createVODEmbed(server, twitchChannel, res) {
     try {
         // Create the embed code
-        vod = res.videos[0]
+        vod = res
         //console.log(vod)
         // Limit description to 200 characters
         if (!vod.description) { vod.description = "" }
@@ -234,6 +238,7 @@ function createVODEmbed(server, twitchChannel, res) {
             .setImage(vod.preview.large)
             .addField("Game", vod.game, true)
             .addField("Length", fancyDurationFormat(vod.length), true)
+            .addField("Type", vod.broadcast_type.charAt(0).toUpperCase() + vod.broadcast_type.slice(1), true)
             .setFooter("Posted on: " + vod.published_at)
         return embed;
     } catch (err) {
@@ -263,49 +268,51 @@ function postVOD(server, twitchChannel, type, err, res) {
         var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
         dbo.collection("servers").findOne(myquery, function (err, dbres) {
             if (err) return err;
-            var index = dbres.twitchChannels.findIndex(x => x.name === twitchChannel.name)
-            switch (type) {
-                case "archive":
-                    if (!dbres.twitchChannels[index].archivedate) { dbres.twitchChannels[index].archivedate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].archivedate
-                    newvalues = { $set: { "twitchChannels.$.archivedate": res.videos[0].created_at } }
-                    break;
+            videos = res.videos.reverse();
+            videos.forEach((video) => {
+                //return;
+                var index = dbres.twitchChannels.findIndex(x => x.name === twitchChannel.name)
+                switch (type) {
+                    case "archive":
+                        if (!dbres.twitchChannels[index].archivedate) { dbres.twitchChannels[index].archivedate = "1970-01-01T00:00:00Z" }
+                        voddate = dbres.twitchChannels[index].archivedate
+                        newvalues = { $set: { "twitchChannels.$.archivedate": video.created_at } }
+                        break;
 
-                case "upload":
-                    if (!dbres.twitchChannels[index].voddate) { dbres.twitchChannels[index].voddate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].voddate
-                    newvalues = { $set: { "twitchChannels.$.voddate": res.videos[0].created_at } }
-                    break;
+                    case "upload":
+                        if (!dbres.twitchChannels[index].voddate) { dbres.twitchChannels[index].voddate = "1970-01-01T00:00:00Z" }
+                        voddate = dbres.twitchChannels[index].voddate
+                        newvalues = { $set: { "twitchChannels.$.voddate": video.created_at } }
+                        break;
 
-                case "highlight":
-                    if (!dbres.twitchChannels[index].highlightdate) { dbres.twitchChannels[index].highlightdate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].highlightdate
-                    newvalues = { $set: { "twitchChannels.$.highlightdate": res.videos[0].created_at } }
-                    break;
-            }
-            if (moment(voddate) < moment(res.videos[0].created_at)) {
-                try {
-                    const guild = client.guilds.find(x => x.id === server.id);
-                    const discordChannel = guild.channels.find(x => x.name === server.discordVODChannel);
-                    const discordEmbed = createVODEmbed(server, twitchChannel, res);
-                    discordChannel.send(notification, discordEmbed).then(
-                        (message) => {
-                            logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${res.videos[0].title}`)
-                            // Write to DB latest video timestamp to prevent posting same video every tick
-
-                            
-                            dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
-                                if (err) throw err;
-                                db.close();
-                            })
-                        }
-                    )
-                } catch (err) {
-                    logger.error(`Error in end of postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
+                    case "highlight":
+                        if (!dbres.twitchChannels[index].highlightdate) { dbres.twitchChannels[index].highlightdate = "1970-01-01T00:00:00Z" }
+                        voddate = dbres.twitchChannels[index].highlightdate
+                        newvalues = { $set: { "twitchChannels.$.highlightdate": video.created_at } }
+                        break;
                 }
-            }
+                if (moment(voddate) < moment(video.created_at)) {
+                    try {
+                        newquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
+                        dbo.collection("servers").updateOne(newquery, newvalues, function (err, res) { if (err) throw err; });
+                        const guild = client.guilds.find(x => x.id === server.id);
+                        const discordChannel = guild.channels.find(x => x.name === server.discordVODChannel);
+                        const discordEmbed = createVODEmbed(server, twitchChannel, video);
+                        discordChannel.send(notification, discordEmbed).then(
+                            (message) => {
+                                logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${video.title}`)
+                                // Write to DB latest video timestamp to prevent posting same video every tick
+
+                            }
+                        )
+                    } catch (err) {
+                        logger.error(`Error in end of postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
+                    }
+                }
+            });
         })
     })
+    db.close();
 }
 
 function postDiscord(server, twitchChannel, err, res) {
