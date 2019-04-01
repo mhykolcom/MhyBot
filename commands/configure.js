@@ -17,14 +17,16 @@ module.exports = {
             if (!server.postArchive) { server.postArchive = false; }
             if (!server.postUploads) { server.postUploads = false; }
             if (!server.postHighlights) { server.postHighlights = false; }
+            if (!server.discordLiveChannel) { liveChannel = "Not Set" } else { liveChannel = server.discordLiveChannel }
+            if (!server.discordVODChannel) { vodChannel = "Not Set" } else { liveChannel = server.discordVODChannel }
             var longarray = [server.prefix, server.role, server.discordLiveChannel, server.discordVODChannel, server.postArchive.toString(), server.postUploads.toString()]
             longest = longarray.reduce((a, b) => a.length > b.length ? a : b).length;
             if (!args[0]) {
                 output = `= Configuration List =\n\n[Use ${server.prefix}config <option> to set that option]\n\n`
                 output += `prefix         :: ${server.prefix}${" ".repeat(longest - server.prefix.length)} :: \`Your bot command prefix'\n`
                 output += `role           :: ${server.role}${" ".repeat(longest - server.role.length)} :: \`Discord server role that can manage bot (No @).'\n`
-                output += `livechannel    :: ${server.discordLiveChannel}${" ".repeat(longest - server.discordLiveChannel.length)} :: \`Discord channel to post live notifications (No #).'\n`
-                output += `vodchannel     :: ${server.discordVODChannel}${" ".repeat(longest - server.discordVODChannel.length)} :: \`Discord channel to post VOD notifications (No #).'\n`
+                output += `livechannel    :: ${liveChannel}${" ".repeat(longest - liveChannel.length)} :: \`Discord channel to post live notifications (No #).'\n`
+                output += `vodchannel     :: ${vodChannel}${" ".repeat(longest - vodChannel.length)} :: \`Discord channel to post VOD notifications (No #).'\n`
                 output += `postarchive    :: ${server.postArchive}${" ".repeat(longest - server.postArchive.toString().length)} :: \`Post stream archive after going offline? A VOD channel must be set.'\n`
                 output += `postuploads    :: ${server.postUploads}${" ".repeat(longest - server.postUploads.toString().length)} :: \`Post latest VOD uploads? A VOD channel must be set.'\n`
                 output += `posthighlights :: ${server.postHighlights}${" ".repeat(longest - server.postHighlights.toString().length)} :: \`Post channel highlights? A VOD channel must be set.'`
