@@ -381,7 +381,7 @@ function postDiscord(server, twitchChannel, err, res) {
             twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === twitchChannel.name.toLowerCase())
             if (!server.postArchive) { server.postArchive = false }
             if (server.postArchive == true) {
-                client.twitchapi.channels.videos({ channelID: twitchChannelInfo._id, broadcast_type: "archive", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo, "archive"));
+                client.twitchapi.channels.videos({ channelID: twitchChannelInfo.id, broadcast_type: "archive", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo, "archive"));
             }
 
             discordChannel.fetchMessage(twitchChannel.messageid).then(
