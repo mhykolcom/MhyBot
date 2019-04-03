@@ -1,9 +1,8 @@
 {
     "discordtoken": "",
     "twitchtoken": "",
+    "youtubetoken": "",
     "mdb_address": "localhost",
     "mdb_port": "27017",
-    "mdb_database": "mhybot",
-    "mdb_username": "",
-    "mdb_password": ""
+    "mdb_database": "mhybot"
 }

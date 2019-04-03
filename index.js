@@ -29,13 +29,16 @@ const logger = winston.createLogger({
 const
     fs = require('fs'),
     Discord = require('discord.js'),
+    YouTube = require('youtube-api'),
     client = new Discord.Client(),
     commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js')),
     timeout = 4 * 60 * 1000,
     { fancyTimeFormat, fancyDurationFormat } = require('./utils.js');
 
-const { discordtoken, twitchtoken, mdb_address, mdb_port } = require('./config/config.json');
+const { discordtoken, twitchtoken, youtubetoken, mdb_address, mdb_port } = require('./config/config.json');
 client.twitchapi = require('twitch-api-v5');
+client.youtube = YouTube;
+client.youtube.clientID = youtubetoken;
 var moment = require('moment');
 client.servers = []
 client.twitchapi.clientID = twitchtoken;
@@ -46,8 +49,6 @@ var MongoUrl = "mongodb://" + mdb_address + ":" + mdb_port + "/";
 client.MongoClient = MongoClient
 client.MongoUrl = MongoUrl
 client.logger = logger
-
-
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
 
@@ -76,7 +77,8 @@ client.on('message', message => {
             discordLiveChannel: null,
             discordVODChannel: null,
             postarchive: null,
-            twitchChannels: []
+            twitchChannels: [],
+            youtubeChannels: []
         }
         dbo.collection("servers").findOne({ id: message.guild.id }, function (err, res) {
             if (err) throw err;
@@ -151,9 +153,11 @@ function tick() {
                     try {
                         //console.log(server.twitchChannels.map(x => x.name))
                         client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
+                        server.youtubeChannels.forEach((ytChannel) => postYT(server, ytChannel))
                     } catch (err) {
                         logger.error(`Error in tick: ${err}`);
                     }
+
                 })
                 db.close();
             })
@@ -164,6 +168,7 @@ function tick() {
     }
 }
 
+// Twitch Functions
 
 function getChannelInfo(server, err, res) {
     if (!res) return;
@@ -196,7 +201,6 @@ function getChannelInfo(server, err, res) {
         }
     })
 }
-
 
 function createEmbed(server, twitchChannel, res) {
     // Create the embed code
@@ -404,6 +408,54 @@ function postDiscord(server, twitchChannel, err, res) {
             logger.error(`Error in postDiscord delete msg: ${err}`);
         }
     }
+}
+
+// YouTube Functions
+function getYTInfo(server, err, res) {
+    // Do code.
+}
+
+function createYTEmbed(server, ytChannel, res) {
+    try {
+        // Create the embed code
+        vod = res.items[0]
+        // Limit description to 200 characters
+        if (vod.snippet.description.length > 199) {
+            vod.snippet.description = vod.snippet.description.substring(0, 199) + "[...]"
+        }
+        var embed = new Discord.RichEmbed()
+            .setColor("#C4302B")
+            .setTitle(vod.snippet.title)
+            .setURL("https://youtu.be/" + vod.snippet.resourceId.videoId)
+            .setDescription("**" + vod.snippet.channelTitle + "**\n" + vod.snippet.description.replace("/n/n", ""))
+            .setThumbnail(ytChannel.icon)
+            .setImage(vod.snippet.thumbnails.high.url)
+            .setTimestamp()
+        return embed;
+    } catch (err) {
+        console.log(vod);
+        logger.error(`Error in createYTEmbed: ${err} | ${ytChannel.name} | ${server.name}`);
+    }
+}
+
+function postYT(server, ytChannel) {
+    //console.log(ytChannel);
+    client.youtube.authenticate({ type: "key", key: client.youtube.clientID });
+
+    client.youtube.playlistItems.list({ "part": "snippet", "maxResults": "1", "playlistId": ytChannel.uploadPlaylist }, function (err, res) {
+        //console.log(res);
+        const guild = client.guilds.find(x => x.id === server.id);
+        const discordChannel = guild.channels.find(x => x.name === server.discordVODChannel);
+        const discordEmbed = createYTEmbed(server, ytChannel, res);
+        //console.log(embed);
+        discordChannel.send(discordEmbed).then(
+            (message) => {
+                logger.info(`[${server.name}/${discordChannel.name}] Posted YouTube Video for ${ytChannel.name}: ${res.items[0].snippet.title}`)
+                // Write to DB latest video timestamp to prevent posting same video every tick
+
+            }
+        )
+    })
 }
 
 function exitHandler(opt, err) {

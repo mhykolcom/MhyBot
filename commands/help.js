@@ -5,7 +5,7 @@ module.exports = {
     aliases: ['commands'],
     args: false,
     usage: '[command name]',
-    permission: "user", 
+    permission: "user",
     execute(client, message, args) {
         // If no specific command is called, show all filtered commands.
         if (!args[0]) {
@@ -34,7 +34,9 @@ module.exports = {
                 } else {
                     perm = c.permission.charAt(0).toUpperCase() + c.permission.slice(1);
                 }
-                output += `${server.prefix}${c.name}${" ".repeat(longest - c.name.length)} :: ${c.description} :: ${perm}\n`;
+                if (!c.hidden) {
+                    output += `${server.prefix}${c.name}${" ".repeat(longest - c.name.length)} :: ${c.description} :: ${perm}\n`;
+                }
             });
             message.channel.send(output, { code: "asciidoc", split: { char: "\u200b" } });
         } else {
