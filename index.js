@@ -151,7 +151,7 @@ function tick() {
                         //console.log(server.twitchChannels.map(x => x.name))
                         client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
                         if (server.youtubeChannels) {
-                            server.youtubeChannels.forEach((ytChannel) => postYT(server, ytChannel))
+                            //server.youtubeChannels.forEach((ytChannel) => postYT(server, ytChannel))
                         }
                     } catch (err) {
                         logger.error(`Error in tick: ${err}`);

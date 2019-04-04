@@ -1,9 +1,7 @@
 Todo:
-- YouTube Support!
-    - VODs
-    - Live
 - Remove server from DB if bot is kicked (https://discord.js.org/#/docs/main/stable/class/Guild?scrollTo=leave)
 - Update Twitch API to latest version
+- Twitter support!
 
 Todone: 
 - Option to ping on message
@@ -17,3 +15,4 @@ Todone:
 - Fix case sensitivity
 - Fix PostArchive config showing false
 - Twitch Highlights
+- YouTube Support!
