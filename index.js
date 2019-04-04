@@ -256,10 +256,7 @@ function postVOD(server, twitchChannel, type, err, res) {
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
     if (!type) { logger.error(`[${server.name}/${twitchChannel.name}] VOD Type not defined`); return; }
-    if (!res.stream) {
-    } else {
 
-    }
     if (err) logger.error(`Error in start of postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
     MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
         if (err) throw err;
@@ -293,10 +290,13 @@ function postVOD(server, twitchChannel, type, err, res) {
                         notification = `New Twitch Highlight from ${dbres.twitchChannels[index].display_name}`
                         break;
                 }
-                if (twitchChannel.mention) {
-                    var notification = `${twitchChannel.mention} - ${notification} - <${res.stream.channel.url}>`;
+                if (!res.stream) {
                 } else {
-                    var notification = `${notification} - <${res.stream.channel.url}>`;
+                    if (twitchChannel.mention) {
+                        var notification = `${twitchChannel.mention} - ${notification} - <${res.stream.channel.url}>`;
+                    } else {
+                        var notification = `${notification} - <${res.stream.channel.url}>`;
+                    }
                 }
                 if (moment(voddate) < moment(video.created_at)) {
                     try {
