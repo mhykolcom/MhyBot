@@ -1,11 +1,12 @@
 module.exports = {
     name: 'reload',
-    category: "✺Developer✺",
+    category: "Management",
     description: 'Reloads a bot command. Bot Owner only.',
     aliases: [],
     args: true,
     usage: '<command>',
     permission: 'botowner',
+    hidden: true,
     execute(client, message, args) {
         const commandName = args[0];
 

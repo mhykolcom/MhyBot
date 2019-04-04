@@ -8,3 +8,5 @@ mc-channels.md
 mongoexport.json
 .vscode/launch.json
 
+
+\.credentials/
