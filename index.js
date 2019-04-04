@@ -150,7 +150,9 @@ function tick() {
                     try {
                         //console.log(server.twitchChannels.map(x => x.name))
                         client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
-                        server.youtubeChannels.forEach((ytChannel) => postYT(server, ytChannel))
+                        if (server.youtubeChannels) {
+                            server.youtubeChannels.forEach((ytChannel) => postYT(server, ytChannel))
+                        }
                     } catch (err) {
                         logger.error(`Error in tick: ${err}`);
                     }
@@ -437,6 +439,7 @@ function createYTEmbed(server, ytChannel, res) {
 }
 
 function postYT(server, ytChannel) {
+    if (!ytChannel) return;
     client.youtube.authenticate({ type: "key", key: client.youtube.clientID });
     client.youtube.playlistItems.list({ "part": "snippet", "maxResults": "1", "playlistId": ytChannel.uploadPlaylist }, function (err, res) {
         if (!res) return;
