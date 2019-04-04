@@ -256,7 +256,7 @@ function postVOD(server, twitchChannel, type, err, res) {
     if (!type) { logger.error(`[${server.name}/${twitchChannel.name}] VOD Type not defined`); return; }
     if (!res.stream) {
     } else {
-        
+
     }
     if (err) logger.error(`Error in start of postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
     MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
@@ -373,6 +373,8 @@ function postDiscord(server, twitchChannel, err, res) {
                 message => message.edit(notification, discordEmbed).then((message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
                 })
+            ).catch(error =>
+                logger.info(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
             );
         } catch (err) {
             logger.error(`Error in postDiscord edit msg: ${err}`);
@@ -402,8 +404,9 @@ function postDiscord(server, twitchChannel, err, res) {
                         })
                     })
                 })
+            ).catch(error =>
+                logger.info(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
             );
-
         } catch (err) {
             logger.error(`Error in postDiscord delete msg: ${err}`);
         }
