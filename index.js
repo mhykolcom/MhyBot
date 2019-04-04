@@ -376,7 +376,7 @@ function postDiscord(server, twitchChannel, err, res) {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
                 })
             ).catch(error =>
-                logger.info(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
+                logger.error(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
             );
         } catch (err) {
             logger.error(`Error in postDiscord edit msg: ${err}`);
@@ -407,7 +407,7 @@ function postDiscord(server, twitchChannel, err, res) {
                     })
                 })
             ).catch(error =>
-                logger.info(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
+                logger.error(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
             );
         } catch (err) {
             logger.error(`Error in postDiscord delete msg: ${err}`);
