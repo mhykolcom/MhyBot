@@ -35,15 +35,10 @@ module.exports = {
                             name: streamer, timestamp: 0,
                             online: false, dmention
                         });
-                        client.MongoClient.connect(client.MongoUrl, { useNewUrlParser: true }, function (err, db) {
+                        client.dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer.toLowerCase(), online: false, messageid: null, mention: dmention } } }, function (err, res) {
                             if (err) throw err;
-                            var dbo = db.db("mhybot")
-                            dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer.toLowerCase(), online: false, messageid: null, mention: dmention } } }, function (err, res) {
-                                if (err) throw err;
-                                message.reply("Twitch Channel Added: " + streamer);
-                                client.logger.info(`[${server.name}] Twitch Channel Added: ${streamer}`)
-                            })
-                            db.close();
+                            message.reply("Twitch Channel Added: " + streamer);
+                            client.logger.info(`[${server.name}] Twitch Channel Added: ${streamer}`)
                         })
                     } else {
                         message.reply(streamer + " doesn't seem to exist.");
@@ -70,11 +65,13 @@ module.exports = {
                     messageid: null,
                     mention: dmention
                 })
-                //console.log(youtubeChannels);
-                client.MongoClient.connect(client.MongoUrl, { useNewUrlParser: true }, function (err, db) {
-                    if (err) throw err;
-                    var dbo = db.db("mhybot")
-                    dbo.collection("servers").updateOne({ _id: client.currentserver._id }, {
+                var topic = `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${channel.items[0].id}`
+                client.pubsub.subscribe(topic, client.pubsub.hub, function (err) {
+                    if (err) {
+                        message.reply(`Error subscribing to YouTube Channel: ${streamer}`)
+                        return client.logger.error(`[${server.name}] Unable to subscribe to YouTube Channel ${streamer}: ${err}`);
+                    }
+                    client.dbo.collection("servers").updateOne({ _id: client.currentserver._id }, {
                         $push: {
                             youtubeChannels: {
                                 name: streamer,
@@ -92,10 +89,9 @@ module.exports = {
                         message.reply("YouTube Channel Added: " + streamer);
                         client.logger.info(`[${server.name}] YouTube Channel Added: ${streamer}`)
                     })
-                    db.close();
                 })
+            });
 
-            })
         }
     }
 };

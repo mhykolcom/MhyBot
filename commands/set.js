@@ -34,15 +34,10 @@ module.exports = {
             dbupdate = { $set: { "youtubeChannels.$.mention": dmention } }
 
         }
-        client.MongoClient.connect(client.MongoUrl, { useNewUrlParser: true }, function (err, db) {
+        client.dbo.collection("servers").updateOne(dbsearch, dbupdate, function (err, res) {
             if (err) throw err;
-            var dbo = db.db("mhybot")
-            dbo.collection("servers").updateOne(dbsearch, dbupdate, function (err, res) {
-                if (err) throw err;
-                message.reply("Edited " + streamer + ".");
-                client.logger.info(`[${server.name}] Channel Edited: ${streamer}`)
-            })
-            db.close();
+            message.reply("Edited " + streamer + ".");
+            client.logger.info(`[${server.name}] Channel Edited: ${streamer}`)
         })
     }
 }
