@@ -30,7 +30,7 @@ const alignedWithColorsAndTime = winston.format.combine(
         format: winston.format.json(),
         transports: [
             //new winston.transports.Console({ format: alignedWithColorsAndTime }),
-            new winston.transports.Console({ }),
+            //new winston.transports.Console({ }),
             new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
         ]
     });
