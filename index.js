@@ -44,7 +44,7 @@ var twitterConnect = new Twitter({
     },
     pubsub = pubSubHubbub.createServer(pubSubOptions),
     xmlParser = new xml2js.Parser(),
-    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "/",
+    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=db",
     client = new Discord.Client()
 pubsub.listen(1337);
 
