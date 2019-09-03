@@ -44,7 +44,7 @@ var twitterConnect = new Twitter({
     },
     pubsub = pubSubHubbub.createServer(pubSubOptions),
     xmlParser = new xml2js.Parser(),
-    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=db",
+    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=mhybot",
     client = new Discord.Client()
 pubsub.listen(1337);
 
@@ -71,12 +71,12 @@ for (const file of commandFiles) {
 }
 
 // Database connection
-logger.info("Connecting to MongoDB...");
+logger.info(`Connecting to MongoDB... ${MongoUrl}`);
 MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
     if (err) return logger.error(`Issues connection to MongoDB: ${err}`)
     client.db = db;
     client.dbo = db.db("mhybot");
-    logger.info(`Connected to MongoDB`)
+    logger.info(`Connected to MongoDB.`)
     logger.info("Connecting to Discord...");
     try {
         client.login(discordtoken)
