@@ -12,7 +12,7 @@ const
     MongoClient = require('mongodb').MongoClient
 
 // Load config
-const { discordtoken, twitchtoken, youtubetoken, mdb_address, mdb_port, twitterKey, twitterSecret, twitterBearer, serverIp, pubSecret } = require('./config/config.json');
+const { discordtoken, twitchtoken, youtubetoken, mdb_address, mdb_port, mdb_user, mdb_password, twitterKey, twitterSecret, twitterBearer, serverIp, pubSecret } = require('./config/config.json');
 
 // Set Dependency Options
 const alignedWithColorsAndTime = winston.format.combine(
@@ -44,7 +44,7 @@ var twitterConnect = new Twitter({
     },
     pubsub = pubSubHubbub.createServer(pubSubOptions),
     xmlParser = new xml2js.Parser(),
-    MongoUrl = "mongodb://" + mdb_address + ":" + mdb_port + "/",
+    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "/",
     client = new Discord.Client()
 pubsub.listen(1337);
 

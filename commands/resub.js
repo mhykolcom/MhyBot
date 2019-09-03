@@ -9,7 +9,6 @@ module.exports = {
     hidden: true,
     execute(client, message, args) {
         var server = client.currentserver;
-        console.log(server.youtubeChannels);
         server.youtubeChannels.forEach((channel) => {
             var topic = `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${channel.id}`
             client.pubsub.subscribe(topic, client.pubsub.hub, function (err) {
@@ -19,7 +18,6 @@ module.exports = {
                 } else {
                     return client.logger.info(`[${server.name}] Resubscribed to YouTube Channel ${channel.name}`);  
                 }
-    
             })
         })
     }

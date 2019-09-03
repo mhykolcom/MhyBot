@@ -28,5 +28,10 @@
     "winston": "^3.2.1",
     "xml2js": "^0.4.19",
     "youtube-api": "^2.0.10"
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.17.1"
   }
 }
