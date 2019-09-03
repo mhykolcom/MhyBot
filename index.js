@@ -209,6 +209,7 @@ function tick() {
 
             })
         })
+        console.log("Tick happened!")
         logger.info("Tick happened!")
     } catch (err) {
         logger.error(`Error in tick: ${err}`)
