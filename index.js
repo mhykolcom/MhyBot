@@ -29,8 +29,9 @@ const alignedWithColorsAndTime = winston.format.combine(
         level: 'info',
         format: winston.format.json(),
         transports: [
-            new winston.transports.Console({ format: alignedWithColorsAndTime }),
-            new winston.transports.File({ filename: 'logs/error.log', level: 'error' })
+            //new winston.transports.Console({ format: alignedWithColorsAndTime }),
+            new winston.transports.Console({ }),
+            new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
         ]
     });
 var twitterConnect = new Twitter({
