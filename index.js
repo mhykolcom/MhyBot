@@ -49,6 +49,9 @@ var twitterConnect = new Twitter({
     MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=mhybot",
     client = new Discord.Client()
 pubsub.listen(1337);
+winston.stream({ start: -1 }).on('log', function (log) {
+    console.log(log);
+});
 
 // Set Variables
 
@@ -110,16 +113,16 @@ pubsub.on('feed', (res) => {
         });
     });
 });
-pubsub.on("subscribe", function(data){
+pubsub.on("subscribe", function (data) {
     logger.info(`[PubSub/Subscribed] ${data.topic}`);
 });
-pubsub.on("unsubscribe", function(data){
+pubsub.on("unsubscribe", function (data) {
     logger.info(`[PubSub/Unsubscribed] ${data.topic}`);
 });
-pubsub.on("error", function(error){
+pubsub.on("error", function (error) {
     logger.error(error);
 });
-pubsub.on("denied", function(data){
+pubsub.on("denied", function (data) {
     logger.error(data);
 });
 
