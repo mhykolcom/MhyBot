@@ -49,9 +49,6 @@ var twitterConnect = new Twitter({
     MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=mhybot",
     client = new Discord.Client()
 pubsub.listen(1337);
-winston.stream({ start: -1 }).on('log', function (log) {
-    console.log(log);
-});
 
 // Set Variables
 
@@ -81,8 +78,8 @@ MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
     if (err) return logger.error(`Issues connection to MongoDB: ${err}`)
     client.db = db;
     client.dbo = db.db("mhybot");
-    logger.info(`Connected to MongoDB.`)
-    logger.info("Connecting to Discord...");
+    logger.info(`Connected to MongoDB.`, `\n`)
+    logger.info("Connecting to Discord...", "\n");
     try {
         client.login(discordtoken)
     } catch (err) {
