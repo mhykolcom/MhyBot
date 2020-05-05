@@ -26,9 +26,9 @@ module.exports = {
             output += `role           :: ${server.role}${" ".repeat(longest - server.role.length)} :: \`Discord server role that can manage bot (No @).'\n`
             output += `livechannel    :: ${liveChannel}${" ".repeat(longest - liveChannel.length)} :: \`Discord channel to post live notifications (No #).'\n`
             output += `vodchannel     :: ${vodChannel}${" ".repeat(longest - vodChannel.length)} :: \`Discord channel to post VOD notifications (No #).'\n`
-            output += `postarchive    :: ${server.postArchive}${" ".repeat(longest - server.postArchive.toString().length)} :: \`Post stream archive after going offline? A VOD channel must be set.'\n`
-            output += `postuploads    :: ${server.postUploads}${" ".repeat(longest - server.postUploads.toString().length)} :: \`Post latest VOD uploads? A VOD channel must be set.'\n`
-            output += `posthighlights :: ${server.postHighlights}${" ".repeat(longest - server.postHighlights.toString().length)} :: \`Post channel highlights? A VOD channel must be set.'`
+            output += `postarchive    :: ${server.postArchive}${" ".repeat(longest - server.postArchive.toString().length)} :: \`Post Twitch stream archive after going offline? A VOD channel must be set.'\n`
+            output += `postuploads    :: ${server.postUploads}${" ".repeat(longest - server.postUploads.toString().length)} :: \`Post latest Twitch VOD uploads? A VOD channel must be set.'\n`
+            output += `posthighlights :: ${server.postHighlights}${" ".repeat(longest - server.postHighlights.toString().length)} :: \`Post Twitch channel highlights? A VOD channel must be set.'`
             return message.channel.send(output, { code: "asciidoc" });
         }
         switch (args[0]) {

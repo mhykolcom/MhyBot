@@ -123,8 +123,8 @@ pubsub.on("error", function (error) {
 pubsub.on("denied", function (data) {
     logger.error(data);
 });
-var resubschedule = schedule.scheduleJob('0 0 4 */2 * *', function(){
-    client.dbo.collection("servers").find({ }).toArray(function (err, res) {
+var resubschedule = schedule.scheduleJob('0 0 4 */2 * *', function () {
+    client.dbo.collection("servers").find({}).toArray(function (err, res) {
         res.forEach((server) => {
             if (server.youtubeChannels) {
                 server.youtubeChannels.forEach((ytChannel) => {
@@ -133,13 +133,13 @@ var resubschedule = schedule.scheduleJob('0 0 4 */2 * *', function(){
                         if (err) {
                             return client.logger.error(`[Scheduled Resub] Unable to resubscribe to YouTube Channel ${ytChannel.name}: ${err}`);
                         } else {
-                            return client.logger.info(`[Scheduled Resub] Resubscribed to YouTube Channel ${ytChannel.name}`);  
+                            return client.logger.info(`[Scheduled Resub] Resubscribed to YouTube Channel ${ytChannel.name}`);
                         }
                     })
                 })
             }
         })
-    }); 
+    });
 })
 client.on('message', message => {
     var myobj = {
@@ -375,8 +375,17 @@ function postDiscord(server, twitchChannel, err, res) {
                 message => message.edit(notification, discordEmbed).then((message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
                 })
-            ).catch(error =>
+            ).catch(error => {
                 logger.error(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
+                var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
+                var newvalues = { $set: { "twitchChannels.$.messageid": null, "twitchChannels.$.online": false } }
+                client.dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
+                    if (err) throw err;
+                    if (res) {
+                        logger.info(`[${server.name}/${discordChannel.name}] Removed missing message from DB for ${twitchChannel.name}`)
+                    }
+                })
+            }
             );
         } catch (err) {
             logger.error(`Error in postDiscord edit msg: ${err}`);
