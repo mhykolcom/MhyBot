@@ -9,10 +9,11 @@ const
     winston = require('winston'),
     twitchapi = require('twitch-api-v5'),
     moment = require('moment'),
-    MongoClient = require('mongodb').MongoClient
+    MongoClient = require('mongodb').MongoClient,
+    schedule = require('node-schedule')
 
 // Load config
-const { discordtoken, twitchtoken, youtubetoken, mdb_address, mdb_port, mdb_user, mdb_password, twitterKey, twitterSecret, twitterBearer, serverIp, pubSecret } = require('./config/config.json');
+const { discordtoken, twitchtoken, youtubetoken, youtubeclientid, youtubeclientsecret, mdb_address, mdb_port, mdb_user, mdb_password, twitterKey, twitterSecret, twitterBearer, serverIp, pubSecret } = require('./config/config.json');
 
 // Set Dependency Options
 const alignedWithColorsAndTime = winston.format.combine(
@@ -46,7 +47,7 @@ var twitterConnect = new Twitter({
     },
     pubsub = pubSubHubbub.createServer(pubSubOptions),
     xmlParser = new xml2js.Parser(),
-    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=mhybot",
+    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=admin",
     client = new Discord.Client()
 pubsub.listen(1337);
 
@@ -73,7 +74,7 @@ for (const file of commandFiles) {
 }
 
 // Database connection
-logger.info(`Connecting to MongoDB... ${MongoUrl}`);
+logger.info(`Connecting to MongoDB...`);
 MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
     if (err) return logger.error(`Issues connection to MongoDB: ${err}`)
     client.db = db;
@@ -122,7 +123,24 @@ pubsub.on("error", function (error) {
 pubsub.on("denied", function (data) {
     logger.error(data);
 });
-
+var resubschedule = schedule.scheduleJob('0 0 4 */2 * *', function(){
+    client.dbo.collection("servers").find({ }).toArray(function (err, res) {
+        res.forEach((server) => {
+            if (server.youtubeChannels) {
+                server.youtubeChannels.forEach((ytChannel) => {
+                    var topic = `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${ytChannel.id}`
+                    client.pubsub.subscribe(topic, client.pubsub.hub, function (err) {
+                        if (err) {
+                            return client.logger.error(`[Scheduled Resub] Unable to resubscribe to YouTube Channel ${ytChannel.name}: ${err}`);
+                        } else {
+                            return client.logger.info(`[Scheduled Resub] Resubscribed to YouTube Channel ${ytChannel.name}`);  
+                        }
+                    })
+                })
+            }
+        })
+    }); 
+})
 client.on('message', message => {
     var myobj = {
         name: message.guild.name,

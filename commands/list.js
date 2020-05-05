@@ -32,7 +32,7 @@ module.exports = {
 
         let ytmsg = "\n";
         for (let i = 0; i < youtubeChannels.length; i++) {
-            ytmsg += `🔔 ${youtubeChannels[i].title}\n`;
+            ytmsg += `🔔 ${youtubeChannels[i].name}\n`;
         }
         if (!ytmsg) {
             message.reply("Youtube list is empty.");
