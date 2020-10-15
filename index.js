@@ -156,7 +156,7 @@ client.on('message', message => {
     client.dbo.collection("servers").findOne({ id: message.guild.id }, function (err, res) {
         if (err) throw err;
         if (!res) {
-            dbo.collection("servers").insertOne(myobj, function (err, res) {
+            client.dbo.collection("servers").insertOne(myobj, function (err, res) {
                 if (err) throw err;
                 logger.info(`[${message.guild.name}] New server added to database`)
             })
