@@ -174,6 +174,7 @@ client.on('message', message => {
         if (!command) return;
 
         let permissions = ['user'];
+        logger.info(message.member);
         if (message.member.roles.some(x => x.name === server.role)) {
             permissions.push('admin');
         }
