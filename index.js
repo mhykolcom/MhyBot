@@ -75,7 +75,7 @@ for (const file of commandFiles) {
 
 // Database connection
 logger.info(`Connecting to MongoDB...`);
-MongoClient.connect(MongoUrl, { useNewUrlParser: true }, function (err, db) {
+MongoClient.connect(MongoUrl, { useNewUrlParser: true, useUnifiedTopology: true }, function (err, db) {
     if (err) return logger.error(`Issues connection to MongoDB: ${err}`)
     client.db = db;
     client.dbo = db.db("mhybot");
@@ -174,8 +174,7 @@ client.on('message', message => {
         if (!command) return;
 
         let permissions = ['user'];
-        logger.info(message.member);
-        if (message.member.roles.some(x => x.name === server.role)) {
+        if (message.member.roles.cache.some(x => x.name === server.role)) {
             permissions.push('admin');
         }
 
@@ -229,7 +228,6 @@ function tick() {
 
             })
         })
-        console.log("Tick happened!")
         logger.info("Tick happened!")
     } catch (err) {
         logger.error(`Error in tick: ${err}`)
@@ -312,8 +310,8 @@ function postVOD(server, twitchChannel, type, err, res) {
                 try {
                     newquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
                     client.dbo.collection("servers").updateOne(newquery, newvalues, function (err, res) { if (err) throw err; });
-                    const guild = client.guilds.find(x => x.id === server.id);
-                    const discordChannel = guild.channels.find(x => x.name === server.discordVODChannel);
+                    const guild = client.guilds.cache.find(x => x.id === server.id);
+                    const discordChannel = guild.channels.cache.find(x => x.name === server.discordVODChannel);
                     const discordEmbed = createVODEmbed(server, twitchChannel, video);
                     discordChannel.send(notification, discordEmbed).then(
                         (message) => {
@@ -348,8 +346,8 @@ function postDiscord(server, twitchChannel, err, res) {
     if (res.stream != null && twitchChannel.messageid == null) {
         // Do new message code
         try {
-            const guild = client.guilds.find(x => x.name === server.name);
-            const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
+            const guild = client.guilds.cache.find(x => x.name === server.name);
+            const discordChannel = guild.channels.cache.find(x => x.name === server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
             discordChannel.send(notification, discordEmbed).then(
                 (message) => {
@@ -368,11 +366,11 @@ function postDiscord(server, twitchChannel, err, res) {
     } else if (res.stream != null && twitchChannel.messageid != null) {
         // Do edit message code
         try {
-            const guild = client.guilds.find(x => x.name === server.name);
-            const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
+            const guild = client.guilds.cache.find(x => x.name === server.name);
+            const discordChannel = guild.channels.cache.find(x => x.name === server.discordLiveChannel);
             const discordEmbed = createEmbed(server, twitchChannel, res);
 
-            discordChannel.fetchMessage(twitchChannel.messageid).then(
+            discordChannel.messages.fetch(twitchChannel.messageid).then(
                 message => message.edit(notification, discordEmbed).then((message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
                 })
@@ -394,15 +392,15 @@ function postDiscord(server, twitchChannel, err, res) {
     } else if (!res.stream && twitchChannel.messageid != null) {
         // Do delete message code
         try {
-            const guild = client.guilds.find(x => x.name === server.name);
-            const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
+            const guild = client.guilds.cache.find(x => x.name === server.name);
+            const discordChannel = guild.channels.cache.find(x => x.name === server.discordLiveChannel);
             twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === twitchChannel.name.toLowerCase())
             if (!server.postArchive) { server.postArchive = false }
             if (server.postArchive == true) {
                 client.twitchapi.channels.videos({ channelID: twitchChannelInfo.id, broadcast_type: "archive", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo, "archive"));
             }
 
-            discordChannel.fetchMessage(twitchChannel.messageid).then(
+            discordChannel.messages.fetch(twitchChannel.messageid).then(
                 message => message.delete().then((message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Offline: ${twitchChannel.name}`)
                     var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
@@ -429,8 +427,8 @@ function postYT(server, ytChannel, ytFeed) {
         if (!res) return;
         if (res.items[0].id == ytChannel.lastVideoId) return;
         if (res.pageInfo.totalResults == "0") return;
-        const guild = client.guilds.find(x => x.id === server.id);
-        const discordChannel = guild.channels.find(x => x.name === server.discordVODChannel);
+        const guild = client.guilds.cache.find(x => x.id === server.id);
+        const discordChannel = guild.channels.cache.find(x => x.name === server.discordVODChannel);
         const discordEmbed = createYTEmbed(server, ytChannel, res);
         if (ytChannel.mention) {
             var notification = `${ytChannel.mention} - New YouTube Video from ${ytChannel.name} - <https://youtu.be/${vod.snippet.resourceId.videoId}>`;
@@ -478,7 +476,7 @@ function createEmbed(server, twitchChannel, res) {
     var startDate = moment(res.stream.created_at)
     var endDate = moment.now()
     twitchChannel.uptime = moment(endDate).diff(startDate, 'seconds')
-    var embed = new Discord.RichEmbed()
+    var embed = new Discord.MessageEmbed()
         .setColor("#6441A5")
         .setTitle(res.stream.channel.display_name)
         .setURL(res.stream.channel.url)
@@ -505,7 +503,7 @@ function createVODEmbed(server, twitchChannel, res) {
         if (vod.description.length > 199) {
             vod.description = vod.description.substring(0, 199) + "[...]"
         }
-        var embed = new Discord.RichEmbed()
+        var embed = new Discord.MessageEmbed()
             .setColor("#6441A5")
             .setTitle(vod.title)
             .setURL(vod.url)
@@ -530,7 +528,7 @@ function createYTEmbed(server, ytChannel, res) {
         if (vod.snippet.description.length > 199) {
             vod.snippet.description = vod.snippet.description.substring(0, 199) + "[...]"
         }
-        var embed = new Discord.RichEmbed()
+        var embed = new Discord.MessageEmbed()
             .setColor("#C4302B")
             .setTitle(vod.snippet.title)
             .setURL("https://youtu.be/" + vod.snippet.resourceId.videoId)

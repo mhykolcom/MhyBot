@@ -32,7 +32,7 @@ module.exports = {
                             name: streamer, timestamp: 0,
                             online: false, dmention
                         });
-                        client.dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer.toLowerCase(), online: false, messageid: null, mention: dmention } } }, function (err, res) {
+                        client.dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $push: { twitchChannels: { name: streamer.toLowerCase(), online: false, messageid: null, mention: dmention, display_name: streamer.toLowerCase() } } }, function (err, res) {
                             if (err) throw err;
                             message.reply("Twitch Channel Added: " + streamer);
                             client.logger.info(`[${server.name}] Twitch Channel Added: ${streamer}`)
@@ -51,19 +51,20 @@ module.exports = {
                 youtubeMember = youtubeChannels.find(channel => channel.name === streamer);
                 if (youtubeMember) { return message.reply(`${streamer} is already in the list.`) }
                 client.youtube.channels.list({ "part": "snippet, contentDetails", "forUsername": `${streamer}` }, function (err, channel) {
-                    if (err) { return client.logger(err) }
-                    if (channel.pageInfo.totalResults == 0) { return message.reply(`${streamer} doesn't seem to exist.`); }
+                    if (err) { return client.logger.error(err) }
+                    //client.logger.info(JSON.stringify(channel,null,4))
+                    if (channel.data.pageInfo.totalResults == 0) { return message.reply(`${streamer} doesn't seem to exist.`); }
                     youtubeChannels.push({
                         name: streamer,
-                        id: channel.items[0].id,
-                        title: channel.items[0].snippet.title,
-                        icon: channel.items[0].snippet.thumbnails.default.url,
-                        customurl: channel.items[0].snippet.customUrl,
-                        uploadPlaylist: channel.items[0].contentDetails.relatedPlaylists.uploads,
+                        id: channel.data.items[0].id,
+                        title: channel.data.items[0].snippet.title,
+                        icon: channel.data.items[0].snippet.thumbnails.default.url,
+                        customurl: channel.data.items[0].snippet.customUrl,
+                        uploadPlaylist: channel.data.items[0].contentDetails.relatedPlaylists.uploads,
                         messageid: null,
                         mention: dmention
                     })
-                    var topic = `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${channel.items[0].id}`
+                    var topic = `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${channel.data.items[0].id}`
                     client.pubsub.subscribe(topic, client.pubsub.hub, function (err) {
                         if (err) {
                             message.reply(`Error subscribing to YouTube Channel: ${streamer}`)
@@ -73,11 +74,11 @@ module.exports = {
                             $push: {
                                 youtubeChannels: {
                                     name: streamer,
-                                    id: channel.items[0].id,
-                                    title: channel.items[0].snippet.title,
-                                    icon: channel.items[0].snippet.thumbnails.default.url,
-                                    customurl: channel.items[0].snippet.customUrl,
-                                    uploadPlaylist: channel.items[0].contentDetails.relatedPlaylists.uploads,
+                                    id: channel.data.items[0].id,
+                                    title: channel.data.items[0].snippet.title,
+                                    icon: channel.data.items[0].snippet.thumbnails.default.url,
+                                    customurl: channel.data.items[0].snippet.customUrl,
+                                    uploadPlaylist: channel.data.items[0].contentDetails.relatedPlaylists.uploads,
                                     messageid: null,
                                     mention: dmention
                                 }

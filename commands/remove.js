@@ -16,8 +16,8 @@ module.exports = {
             // Twitch Code
             var twitchChannels = server.twitchChannels;
             const twitchMember = twitchChannels.find(channel => channel.name.toLowerCase() === streamer.toLowerCase());
-            const guild = client.guilds.find(x => x.name === server.name);
-            const discordChannel = guild.channels.find(x => x.name === server.discordLiveChannel);
+            const guild = client.guilds.cache.find(x => x.name === server.name);
+            const discordChannel = guild.channels.cache.find(x => x.name === server.discordLiveChannel);
 
             if (twitchMember) {
                 server.twitchChannels = twitchChannels.filter(channel => channel.name !== twitchMember.name.toLowerCase())
@@ -28,7 +28,7 @@ module.exports = {
                         // Delete message
                         discordChannel.fetchMessage(twitchChannelInfo.messageid).then(message => message.delete().then((message) => { }))
 
-                    }
+                    } 
                 })
                 client.dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $pull: { twitchChannels: { name: twitchMember.name } } }, function (err, res) {
                     if (err) throw err;
