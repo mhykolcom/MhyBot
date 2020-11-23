@@ -1,7 +1,7 @@
 module.exports = {
     name: 'configure',
     category: "Management",
-    description: 'Configure the bot for your server. Server Owner only.',
+    description: 'Configure the bot for your server.',
     aliases: ['config'],
     args: false,
     usage: '<setting> <value>',
