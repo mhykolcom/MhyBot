@@ -13,7 +13,7 @@ const
     schedule = require('node-schedule')
 
 // Load config
-const { discordtoken, twitchtoken, youtubetoken, youtubeclientid, youtubeclientsecret, mdb_address, mdb_port, mdb_user, mdb_password, twitterKey, twitterSecret, twitterBearer, serverIp, pubSecret } = require('./config/config.json');
+const {connections, database, pubsub_server, configs} = require('./config/config.json');
 
 // Set Dependency Options
 const alignedWithColorsAndTime = winston.format.combine(
@@ -23,11 +23,13 @@ const alignedWithColorsAndTime = winston.format.combine(
     winston.format.printf((info) => {
         const { timestamp, level, message, ...args } = info;
         const ts = timestamp.slice(0, 19).replace('T', ' ');
-        return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
+        let format = `${ts} [${level}]: ${message}`;
+        if (Object.keys(args).length) format += ' ' + JSON.stringify(args, null, 2)
+        return format;
     })
 ),
     logger = winston.createLogger({
-        level: 'info',
+        level: configs.logging_level,
         format: winston.format.json(),
         transports: [
             //new winston.transports.Console({ format: winston.format.simple() }),
@@ -36,18 +38,19 @@ const alignedWithColorsAndTime = winston.format.combine(
             new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
         ]
     });
+
 var twitterConnect = new Twitter({
-    consumer_key: twitterKey,
-    consumer_secret: twitterSecret,
-    bearer_token: twitterBearer
+    consumer_key: connections.twitter.key,
+    consumer_secret: connections.twitter.secret,
+    bearer_token: connections.twitter.bearer
 }),
     pubSubOptions = {
-        port: 1337,
-        callbackUrl: `http://${serverIp}:1337`
+        port: pubsub_server.port,
+        callbackUrl: `${pubsub_server.protocol}://${pubsub_server.address}:${pubsub_server.port}`
     },
     pubsub = pubSubHubbub.createServer(pubSubOptions),
     xmlParser = new xml2js.Parser(),
-    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=mhybot",
+    MongoUrl = "mongodb://" + database.user + ":" + database.password + "@" + database.address + ":" + database.port + "?authMechanism=DEFAULT&authSource=mhybot",
     client = new Discord.Client()
 pubsub.listen(1337);
 
@@ -58,10 +61,10 @@ var commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.j
     { fancyTimeFormat, fancyDurationFormat } = require('./utils.js');
 client.twitchapi = twitchapi;
 client.youtube = YouTube;
-client.youtube.clientID = youtubetoken;
+client.youtube.clientID = connections.youtube.client_id;
 client.twitter = twitterConnect;
 client.servers = [];
-client.twitchapi.clientID = twitchtoken;
+client.twitchapi.clientID = connections.twitch.token;
 client.commands = new Discord.Collection();
 client.MongoClient = MongoClient;
 client.MongoUrl = MongoUrl;
@@ -74,15 +77,16 @@ for (const file of commandFiles) {
 }
 
 // Database connection
-logger.info(`Connecting to MongoDB...`);
+logger.verbose(`Connecting to MongoDB...`);
 MongoClient.connect(MongoUrl, { useNewUrlParser: true, useUnifiedTopology: true }, function (err, db) {
     if (err) return logger.error(`Issues connection to MongoDB: ${err}`)
     client.db = db;
-    client.dbo = db.db("mhybot");
+    client.dbo = db.db(database.name);
     logger.info(`Connected to MongoDB.`, `\n`)
-    logger.info("Connecting to Discord...", "\n");
+
+    logger.verbose("Connecting to Discord...", "\n");
     try {
-        client.login(discordtoken)
+        client.login(connections.discord.token)
     } catch (err) {
         logger.error(`Error in Discord login: ${err}`);
     }
@@ -142,11 +146,11 @@ var resubschedule = schedule.scheduleJob('0 0 4 */2 * *', function () {
     });
 })
 client.on('message', message => {
-    var myobj = {
+    const new_server_obj = {
         name: message.guild.name,
         id: message.guild.id,
-        prefix: "~",
-        role: "botadmin",
+        prefix: configs.default_prefix,
+        role: configs.default_management_role,
         discordLiveChannel: null,
         discordVODChannel: null,
         postarchive: null,
@@ -156,11 +160,11 @@ client.on('message', message => {
     client.dbo.collection("servers").findOne({ id: message.guild.id }, function (err, res) {
         if (err) throw err;
         if (!res) {
-            client.dbo.collection("servers").insertOne(myobj, function (err, res) {
+            client.dbo.collection("servers").insertOne(new_server_obj, function (err, res) {
                 if (err) throw err;
                 logger.info(`[${message.guild.name}] New server added to database`)
             })
-            client.currentserver = myobj;
+            client.currentserver = new_server_obj;
         } else {
             client.currentserver = res;
         }
@@ -183,7 +187,7 @@ client.on('message', message => {
             permissions.push('owner');
         }
 
-        if (message.member.id == "83002230331932672") {
+        if (message.member.id == configs.bot_owner_user_id) {
             permissions.push('admin');
             permissions.push('owner');
             permissions.push('botowner');
@@ -209,7 +213,7 @@ client.on('message', message => {
         }
         catch (error) {
             logger.error(error);
-            message.reply('there was an error trying to execute that command!');
+            message.reply('There was an error trying to execute that command!');
         }
     })
 });
@@ -228,7 +232,7 @@ function tick() {
 
             })
         })
-        logger.info("Tick happened!")
+        logger.verbose("Tick happened!")
     } catch (err) {
         logger.error(`Error in tick: ${err}`)
     }

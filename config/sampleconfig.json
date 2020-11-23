@@ -1,8 +1,39 @@
 {
-    "discordtoken": "",
-    "twitchtoken": "",
-    "youtubetoken": "",
-    "mdb_address": "localhost",
-    "mdb_port": "27017",
-    "mdb_database": "mhybot"
+    "connections": {
+        "discord": {
+            "token": ""
+        },
+        "twitch": {
+            "token": ""
+        },
+        "youtube": {
+            "token": "",
+            "client_id": "",
+            "client_secret": ""
+        },
+        "twitter": {
+            "key": "",
+            "secret": "",
+            "bearer": ""
+        }
+    },
+    "database": {
+        "address": "localhost",
+        "port": 27017,
+        "user": "",
+        "password": "",
+        "name": "mhybot"
+    },
+    "pubsub_server": {
+        "protocol": "http",
+        "address": "",
+        "port": 1337,
+        "secret": ""
+    },
+    "configs": {
+        "default_prefix": "~",
+        "default_management_role": "botadmin",
+        "logging_level": "info",
+        "bot_owner_user_id": "83002230331932672"
+    }
 }
