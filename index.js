@@ -87,13 +87,14 @@ MongoClient.connect(MongoUrl, { useNewUrlParser: true, useUnifiedTopology: true 
     logger.verbose("Connecting to Discord...", "\n");
     try {
         client.login(connections.discord.token)
+        logger.info("Logged in to Discord");
     } catch (err) {
         logger.error(`Error in Discord login: ${err}`);
     }
 })
 
 client.on('ready', () => {
-    logger.info("Logged in to Discord");
+    logger.info("Ready!");
     tick();
     setInterval(tick, timeout);
 });
@@ -232,7 +233,7 @@ function tick() {
 
             })
         })
-        logger.verbose("Tick happened!")
+        logger.debug("Tick happened!")
     } catch (err) {
         logger.error(`Error in tick: ${err}`)
     }
@@ -321,7 +322,6 @@ function postVOD(server, twitchChannel, type, err, res) {
                         (message) => {
                             logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${video.title}`)
                             // Write to DB latest video timestamp to prevent posting same video every tick
-
                         }
                     )
                 } catch (err) {
