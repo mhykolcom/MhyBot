@@ -33,6 +33,7 @@
     "configs": {
         "default_prefix": "~",
         "default_management_role": "botadmin",
+        "environment": "dev",
         "logging_level": "info",
         "bot_owner_user_id": "83002230331932672"
     }
