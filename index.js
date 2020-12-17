@@ -172,7 +172,14 @@ client.on('message', message => {
         var server = client.currentserver;
         if (!message.content.startsWith(server.prefix) || message.author.bot) return;
 
-        const args = message.content.slice(server.prefix.length).split(/ +/);
+        const args = message.content.slice(server.prefix.length).match(/(?:[^\s"']+|(?:"[^"]*")|(?:'[^']*'))+/g);
+        args.forEach(function(value, index, array){
+            const len = value.length-1;
+            if ((value[0] == '"' && value[len] == '"') || (value[0] == "'" && value[len] == "'")) {
+                args[index] = value.substr(1, len - 1);
+            }
+        });
+
         const commandName = args.shift().toLowerCase();
         const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
