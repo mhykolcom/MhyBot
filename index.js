@@ -221,7 +221,10 @@ client.on('message', message => {
             //message.reply('commands have been disabled temporarily.');
         }
         catch (error) {
-            logger.error(error);
+            // Only do this on non-dev envs! This is causing error output and stack traces to not show
+            if (["dev", "local"].includes(configs.environment)) console.log(error);
+            else logger.error(error);
+            // if (!(configs.environment in ["dev", "local"])) logger.error(error);
             message.reply('There was an error trying to execute that command!');
         }
     })
