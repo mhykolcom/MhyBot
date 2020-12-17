@@ -203,7 +203,15 @@ client.on('message', message => {
         if (command.args && !args.length) {
             let reply = `You didn't provide any arguments, ${message.author}!`;
             if (command.usage) {
-                reply += `\nThe proper usage would be: \`${server.prefix}${command.name} ${command.usage}\``;
+                if (typeof command.usage == 'object') {
+                    // Should technically be array, but jS dUmB
+                    reply += '\nThe proper usages would be:\n';
+                    command.usage.forEach(function(usage) {
+                        reply += '`' + server.prefix + command.name + ' ' + usage + '`\n';
+                    });
+                } else {
+                    reply += `\nThe proper usage would be: \`${server.prefix}${command.name} ${command.usage}\``;
+                }
             }
             return message.channel.send(reply);
         }
