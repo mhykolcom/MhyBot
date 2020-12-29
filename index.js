@@ -261,11 +261,10 @@ function getChannelInfo(server, err, res) {
     if (!res) return;
     if (err) logger.error(`Error in getChannelInfo: ${err}`);
     res.users.forEach((user) => {
-        twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
+        let twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
         try {
-            twitchChannelDB = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
-            var myquery = { _id: server._id, "twitchChannels.name": twitchChannelDB.name }
-            var newvalues = { $set: { "twitchChannels.$.id": user._id, "twitchChannels.$.display_name": user.display_name, "twitchChannels.$.name": user.name.toLowerCase() } }
+            let myquery = { _id: server._id, "twitchChannels.name": twitchChannelInfo.name }
+            let newvalues = { $set: { "twitchChannels.$.id": user._id, "twitchChannels.$.display_name": user.display_name, "twitchChannels.$.name": user.name.toLowerCase() } }
             client.dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
                 if (err) throw err;
             });
@@ -273,12 +272,14 @@ function getChannelInfo(server, err, res) {
             console.log(`Error in user database update: ${err}`)
         }
         client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
-        if (!server.postUploads) { server.postUploads = false }
-        if (server.postUploads == true) {
+
+        server.postUploads = server.postUploads || false;
+        if (server.postUploads) {
             client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo, "upload"));
         }
-        if (!server.postHighlights) { server.postHighlights = false }
-        if (server.postHighlights == true) {
+
+        server.postHighlights = server.postHighlights || false;
+        if (server.postHighlights) {
             client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "highlight", limit: "4" }, postVOD.bind(this, server, twitchChannelInfo, "highlight"));
         }
     })
@@ -301,22 +302,22 @@ function postVOD(server, twitchChannel, type, err, res) {
             var index = dbres.twitchChannels.findIndex(x => x.name === twitchChannel.name)
             switch (type) {
                 case "archive":
-                    if (!dbres.twitchChannels[index].archivedate) { dbres.twitchChannels[index].archivedate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].archivedate
+                    // if (!dbres.twitchChannels[index].archivedate) { dbres.twitchChannels[index].archivedate = "1970-01-01T00:00:00Z" }
+                    voddate = dbres.twitchChannels[index].archivedate || "1970-01-01T00:00:00Z";
                     newvalues = { $set: { "twitchChannels.$.archivedate": video.created_at } }
                     notification = `New Twitch Archive from ${dbres.twitchChannels[index].display_name}`
                     break;
 
                 case "upload":
-                    if (!dbres.twitchChannels[index].voddate) { dbres.twitchChannels[index].voddate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].voddate
+                    // if (!dbres.twitchChannels[index].voddate) { dbres.twitchChannels[index].voddate = "1970-01-01T00:00:00Z" }
+                    voddate = dbres.twitchChannels[index].voddate || "1970-01-01T00:00:00Z"
                     newvalues = { $set: { "twitchChannels.$.voddate": video.created_at } }
                     notification = `New Twitch Upload from ${dbres.twitchChannels[index].display_name}`
                     break;
 
                 case "highlight":
-                    if (!dbres.twitchChannels[index].highlightdate) { dbres.twitchChannels[index].highlightdate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].highlightdate
+                    // if (!dbres.twitchChannels[index].highlightdate) { dbres.twitchChannels[index].highlightdate = "1970-01-01T00:00:00Z" }
+                    voddate = dbres.twitchChannels[index].highlightdate || "1970-01-01T00:00:00Z"
                     newvalues = { $set: { "twitchChannels.$.highlightdate": video.created_at } }
                     notification = `New Twitch Highlight from ${dbres.twitchChannels[index].display_name}`
                     break;
