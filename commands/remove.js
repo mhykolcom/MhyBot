@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['r', 'del'],
     args: true,
     usage: '<Platform> <Channel>',
+    allowNoSubcommand: false,
     permission: "admin", // not used yet,
     execute(client, message, args) {
         const platform = args[0];

@@ -207,7 +207,7 @@ client.on('message', message => {
             return;
         }
 
-        if (command.args && !args.length) {
+        if (command.args && (!command.allowNoSubcommand && !args.length)) {
             let reply = `You didn't provide any arguments, ${message.author}!`;
             if (command.usage) {
                 if (typeof command.usage == 'object') {

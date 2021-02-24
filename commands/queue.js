@@ -56,6 +56,7 @@ module.exports = {
         'no [<queue number> (only required when multiple queues)]',
         'roll [<queue number> (only required when multiple queues)]',
     ],
+    allowNoSubcommand: false,
     permission: 'admin',
     execute(client, message, args) {
         /**

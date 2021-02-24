@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['config'],
     args: false,
     usage: '<setting> <value>',
+    allowNoSubcommand: false,
     permission: 'owner',
     execute(client, message, args) {
         //var server = client.servers.find(server => server.name === message.guild.name);

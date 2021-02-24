@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['a'],
     args: true,
     usage: '<Platform> <ChannelName> [mention role]',
+    allowNoSubcommand: false,
     permission: 'admin',
     execute(client, message, args) {
         const platform = args[0].toLowerCase();
