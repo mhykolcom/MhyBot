@@ -35,6 +35,11 @@
         "default_management_role": "botadmin",
         "environment": "dev",
         "logging_level": "info",
-        "bot_owner_user_id": "83002230331932672"
+        "bot_owner_user_id": "83002230331932672",
+        "among_us": {
+            "patreon_role_mention": "",
+            "better_crew_link": "https://github.com/OhMyGuus/BetterCrewLink",
+            "staff_roles": []
+        }
     }
 }
