@@ -71,6 +71,7 @@ client.MongoUrl = MongoUrl;
 client.logger = logger;
 client.pubsub = pubsub;
 client.pubsub.hub = "https://pubsubhubbub.appspot.com/";
+client.configs = configs;
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
     client.commands.set(command.name, command);
