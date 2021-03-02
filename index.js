@@ -579,7 +579,8 @@ function twitterEmbed(server, twAccount, res) {
 
 function exitHandler(opt, err) {
     if (err) {
-        logger.error(`Error in exitHandler: ${err}`);
+        if (configs.logging_level == 'debug' || ["dev", "local"].includes(configs.environment)) console.error(err);
+        else logger.error(`Error in exitHandler: ${err}`);
     }
     if (opt.save) {
     }
