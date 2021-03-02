@@ -67,7 +67,7 @@ module.exports = {
          * @param prox : boolean
          * @return {boolean}
          */
-        function createQueue(size, time = null, prox = false, maxRoll=20, order='desc') {
+        function createQueue(size, time=null, prox=false, maxRoll=20, order='desc') {
             client.logger.debug('Creating a queue');
 
             let newQueue = {
@@ -75,7 +75,7 @@ module.exports = {
                     name: message.author.username,
                     icon: message.author.avatarURL(),
                 },
-                description: `<@&${client.configs.among_us.patreon_role_mention}>:\n**${size} slots open**`,
+                description: `<@&${client.configs.among_us.patreon_role}>:\n**${size} slots open**`,
                 size: size,
                 max_roll: maxRoll,
                 sort_order: order,
@@ -89,17 +89,17 @@ module.exports = {
                 open: true,
             };
 
-            if (time) { newQueue.description += ` || Closes in ${time} mins.` }
-            if (prox) { newQueue.description += `\nUsing prox tonight: ${client.configs.among_us.better_crew_link}`}
+            if (time) { newQueue.description += ` || Closes in ${time} mins.`; }
+            if (prox) { newQueue.description += `\nUsing prox tonight: ${client.configs.among_us.better_crew_link}`; }
             // if (title) { newQueue.description += `${title}\n` }
             newQueue.description += '\n\n'
             if (prox) {
-                newQueue.description += 'Please have the prox software running and setup (details in private chat), the game launched, and in voice chat, ready to play by 9\n';
+                newQueue.description += 'Please have the proxy chat software running and setup (details in private chat), the game launched, and in voice chat, ready to play by 9\n';
             } else {
                 newQueue.description += 'Please have the game launched, and in voice chat, ready to play by 9\n';
             }
             newQueue.description += 'Only roll if you are able to play!\n\n' +
-                `*${size} **${order=='desc'?'highest':'lowest'}** rolls will be selected*\n` +
+                `*The ${(size>1 ? size + ' ':'')}**${order == 'desc' ? 'highest' : 'lowest'}** ${size > 1?'rolls':'roll'} will be selected*\n` +
                 `Use \`${client.currentserver.prefix}roll\` (has a max roll of ${maxRoll})\n`
             ;
 
@@ -115,17 +115,27 @@ module.exports = {
             let author = message.author;
 
             if (!activeQueues.length || !activeQueues[0].open) {
-                message.reply(`(${author.username}) There is no active queue right now`);
+                message.reply(`There is no active queue right now`);
+                return;
+            }
+
+            if (!message.member.roles.has(configs.among_us.patreon_role)) {
+                message.reply(`You must be a patreon to roll`);
+                return;
+            }
+
+            if (message.channel.id != configs.among_us.patreon_role_channel) {
+                message.reply(`You can not do this in this channel`);
                 return;
             }
 
             if (author.id in activeQueues[0].slots) {
-                message.reply(`(${author.username}) You have already rolled for this queue`);
+                message.reply(`You have already rolled for this queue`);
                 return;
             }
 
             let roll = doRoll(activeQueues[0].max_roll, author);
-            message.reply(author.username + ': You rolled a ' + roll);
+            message.reply(': You rolled a ' + roll);
         }
 
         function doRoll(maxRoll, author) {
@@ -145,6 +155,7 @@ module.exports = {
         function closeQueue() {
             activeQueues[0].open = false;
             message.channel.send('Queue closed');
+            showQueue();
         }
 
         function reopenQueue() {
@@ -212,7 +223,9 @@ module.exports = {
             let rolls = sortRolls(queue);
 
             let topRolls = [];
-            for (let i=0; i<queue.size; i++) { topRolls.push(rolls[i][1]); }
+            for (let i=0; i<queue.size; i++) {
+                topRolls.push(rolls[i][1]);
+            }
             let cutoff;
             let topRollCount;
             if (queue.sort_order == 'asc') {
@@ -284,7 +297,7 @@ module.exports = {
                 }
             }
             if (!approved) {
-                message.reply(`You are not authorized to use this command. If you are trying to roll, please use just \`${client.currentserver.prefix}roll\``);
+                message.reply(`You are not authorized to do this.\nIf you are trying to roll, only use \`${client.currentserver.prefix}roll\``);
                 return false;
             }
 
@@ -295,6 +308,16 @@ module.exports = {
                     break;
                 case 'open':
                     let open_args = [];
+
+                    if (!args.length) {
+                        output = `= Creating an Among Us roll queue =\n\n[Use ${client.currentserver.prefix}roll open <slot count> [<time> [<prox> [<max_roll> [<asc|desc>]]]] ]\n\n`
+                        output += `slot count :: required [int]  :: \`Number of available slots'\n`
+                        output += `time       :: optional [int]  :: \`Aesthetics only for now'\n`
+                        output += `prox       :: optional [bool] :: \`If the among crew is playing with voice proxy enabled that night'\n`
+                        output += `max_roll   :: optional [int]  :: \`The highest number thrown for a ${client.currentserver.prefix}roll'\n`
+                        output += `asc|desc   :: optional [enum] :: \`Determines sort order for rolls thrown (choose one)'\n`
+                        return message.channel.send(output, {code: "asciidoc"});
+                    }
 
                     // Num slots
                     let size = args.shift();
@@ -364,32 +387,5 @@ module.exports = {
                     client.logger.warn('unknown subcommand: ' + subcommand)
             }
         }
-
-        // console.log('----------------\nmessage:\n', message, '\n----------------\nArgs:\n', args, '\n----------------\n');
-        /*client.dbo.collection("queue").findOneAndUpdate(filter, {$set: options}, {new: true}, async function (err, result) {
-            if (err)
-                next(err)
-            else {
-                console.log("updated");
-            }
-        }).sort({createdAt: -1})*/
-        /*client.dbo.collection("queue").updateOne({_id: client.currentserver._id}, {
-            $push: {
-                youtubeChannels: {
-                    name: streamer,
-                    id: channel.items[0].id,
-                    title: channel.items[0].snippet.title,
-                    icon: channel.items[0].snippet.thumbnails.default.url,
-                    customurl: channel.items[0].snippet.customUrl,
-                    uploadPlaylist: channel.items[0].contentDetails.relatedPlaylists.uploads,
-                    messageid: null,
-                    mention: dmention
-                }
-            }
-        }, function (err, res) {
-            if (err) throw err;
-            message.reply("YouTube Channel Added: " + streamer);
-            client.logger.info(`[${server.name}] YouTube Channel Added: ${streamer}`)
-        })*/
     }
 };

@@ -37,9 +37,10 @@
         "logging_level": "info",
         "bot_owner_user_id": "83002230331932672",
         "among_us": {
-            "patreon_role_mention": "",
+            "patreon_role": "685161295506571313",
+            "patreon_role_channel": "779438251563155486",
             "better_crew_link": "https://github.com/OhMyGuus/BetterCrewLink",
-            "staff_roles": []
+            "staff_roles": ["609460383777947688", "352857086763466754"]
         }
     }
 }
