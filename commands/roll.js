@@ -70,12 +70,17 @@ module.exports = {
         function createQueue(size, time=null, prox=false, maxRoll=20, order='desc') {
             client.logger.debug('Creating a queue');
 
+            let announce_roll = 'All';
+            if (message.channel.id in client.configs.among_us.announce_roll) {
+                announce_roll = '<@&' + client.configs.among_us.announce_roll[message.channel.id] + '>';
+            }
+
             let newQueue = {
                 creator: {
                     name: message.author.username,
                     icon: message.author.avatarURL(),
                 },
-                description: `<@&${client.configs.among_us.patreon_role}>:\n**${size} slots open**`,
+                description: `${announce_roll}:\n**${size} slots open**`,
                 size: size,
                 max_roll: maxRoll,
                 sort_order: order,
@@ -119,12 +124,20 @@ module.exports = {
                 return;
             }
 
-            if (!message.member.roles.has(configs.among_us.patreon_role)) {
+            let can_roll = false;
+            for (const roll_role_id of client.configs.among_us.roll_roles) {
+                if (message.member.roles.cache.has(roll_role_id)) {
+                    can_roll = true;
+                    break;
+                }
+            }
+
+            if (!can_roll) {
                 message.reply(`You must be a patreon to roll`);
                 return;
             }
 
-            if (message.channel.id != configs.among_us.patreon_role_channel) {
+            if (!client.configs.among_us.roll_channels.includes(message.channel.id)) {
                 message.reply(`You can not do this in this channel`);
                 return;
             }
@@ -164,6 +177,7 @@ module.exports = {
         }
 
         function clearQueue() {
+            if (activeQueues[0].open) closeQueue();
             delete activeQueues[0];
             lastSimRoll = 0;
             activeQueues = activeQueues.filter(_ => true);
@@ -212,6 +226,7 @@ module.exports = {
 
             let rolls = []
             for (const slot of slots) {
+                console.slot
                 rolls.push([slot.author.username, slot.roll]);
             }
 
@@ -223,45 +238,56 @@ module.exports = {
             let rolls = sortRolls(queue);
 
             let topRolls = [];
-            for (let i=0; i<queue.size; i++) {
-                topRolls.push(rolls[i][1]);
-            }
-            let cutoff;
-            let topRollCount;
-            if (queue.sort_order == 'asc') {
-                cutoff = Math.max(...topRolls);
-                topRollCount = rolls.reduce((count, roll) => (roll[1] <= cutoff ? ++count : count), 0);
+            if (rolls.length) {
+
+                if (rolls.length >= queue.size) {
+                    for (let i = 0; i < queue.size; i++) {
+                        topRolls.push(rolls[i][1]);
+                    }
+                } else {
+                    topRolls = rolls.map(([_, roll]) => roll);
+                }
+
+                let cutoff;
+                let topRollCount;
+                if (queue.sort_order == 'asc') {
+                    cutoff = Math.max(...topRolls);
+                    topRollCount = rolls.reduce((count, roll) => (roll[1] <= cutoff ? ++count : count), 0);
+                } else {
+                    cutoff = Math.min(...topRolls);
+                    topRollCount = rolls.reduce((count, roll) => (roll[1] >= cutoff ? ++count : count), 0);
+                }
+                let cutoffCount = rolls.reduce((count, roll) => (roll[1] == cutoff ? ++count : count), 0);
+                let tieBreakNeeded = topRollCount > queue.size;
+
+                let givenLine = false;
+                for (const [username, roll] of rolls) {
+                    if (!givenLine && ((queue.sort_order == 'asc' && roll > cutoff) || (queue.sort_order == 'desc' && roll < cutoff))) {
+                        queueText += '------------------------------------\n';
+                        givenLine = true;
+                    }
+                    queueText += `${username} - ${roll}`;
+                    if (roll == cutoff && tieBreakNeeded) {
+                        queueText += ' [tie]';
+                    }
+                    queueText += '\n';
+                }
+
+                let returnText = '**Roll Status**\n```' +
+                    queueText +
+                    '```';
+
+                if (tieBreakNeeded) {
+                    let remaining = queue.size - (topRollCount - cutoffCount);
+                    if (remaining == 1) returnText += `\n**Tie breaker needed for the last slot**`;
+                    else returnText += `\n**Tie breaker needed for the last ${remaining} slots**`;
+
+                }
+
+                return returnText;
             } else {
-                cutoff = Math.min(...topRolls);
-                topRollCount = rolls.reduce((count, roll) => (roll[1] >= cutoff ? ++count : count), 0);
+                return '**Roll Status**\n```No rolls recorded```';
             }
-            let cutoffCount = rolls.reduce((count, roll) => (roll[1] == cutoff ? ++count : count), 0);
-            let tieBreakNeeded = topRollCount > queue.size;
-
-            let givenLine = false;
-            for (const [username, roll] of rolls) {
-                if (!givenLine && ((queue.sort_order == 'asc' && roll > cutoff) || (queue.sort_order == 'desc' && roll < cutoff))) {
-                    queueText += '------------------------------------\n';
-                    givenLine = true;
-                }
-                queueText += `${username} - ${roll}`;
-                if (roll == cutoff && tieBreakNeeded) {
-                    queueText += ' [tie]';
-                }
-                queueText += '\n';
-            }
-            let returnText='**Roll Status**\n```' +
-                queueText +
-                '```';
-
-            if (tieBreakNeeded) {
-                let remaining = queue.size-(topRollCount-cutoffCount);
-                if (remaining == 1) returnText += `\n**Tie breaker needed for the last slot**`;
-                else returnText += `\n**Tie breaker needed for the last ${remaining} slots**`;
-
-            }
-
-            return returnText;
         }
 
         function createQueueEmbed(queue) {
