@@ -5,6 +5,7 @@ module.exports = {
     aliases: [],
     args: false,
     usage: '',
+    allowNoSubcommand: false,
     permission: 'botowner',
     hidden: true,
     execute(client, message, args) {
@@ -16,7 +17,7 @@ module.exports = {
                     message.reply(`Error resubscribing to YouTube Channel: ${channel.name}`)
                     return client.logger.error(`[${server.name}] Unable to resubscribe to YouTube Channel ${channel.name}: ${err}`);
                 } else {
-                    return client.logger.info(`[${server.name}] Resubscribed to YouTube Channel ${channel.name}`);  
+                    return client.logger.info(`[${server.name}] Resubscribed to YouTube Channel ${channel.name}`);
                 }
             })
         })

@@ -5,6 +5,7 @@ module.exports = {
     aliases: [],
     args: false,
     usage: '',
+    allowNoSubcommand: true,
     permission: "admin",
     execute(client, message, args) {
         // needs twitchChannels in here too!

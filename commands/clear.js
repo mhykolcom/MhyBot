@@ -7,6 +7,7 @@ module.exports = {
     aliases: ['prune'],
     args: true,
     usage: '<number>',
+    allowNoSubcommand: false,
     permission: 'admin',
     execute(client, message, args) {
         const amount = parseInt(args[0]) + 1;

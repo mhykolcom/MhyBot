@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['commands'],
     args: false,
     usage: '[command name]',
+    allowNoSubcommand: false,
     permission: "user",
     execute(client, message, args) {
         // If no specific command is called, show all filtered commands.

@@ -5,6 +5,7 @@ module.exports = {
     aliases: [],
     args: true,
     usage: '<command>',
+    allowNoSubcommand: false,
     permission: 'botowner',
     hidden: true,
     execute(client, message, args) {
