@@ -5,7 +5,8 @@ module.exports = {
     aliases: ['r', 'del'],
     args: true,
     usage: '<Platform> <Channel>',
-    permission: "admin", // not used yet, 
+    allowNoSubcommand: false,
+    permission: "admin", // not used yet,
     execute(client, message, args) {
         const platform = args[0];
         if (args[0].toLowerCase() != "twitch" && args[0].toLowerCase() != "youtube") { return message.reply(`Please specify platform (Twitch or YouTube).`) }
@@ -23,12 +24,12 @@ module.exports = {
                 server.twitchChannels = twitchChannels.filter(channel => channel.name !== twitchMember.name.toLowerCase())
                 client.dbo.collection("servers").findOne({ _id: client.currentserver._id }, function (err, res) {
                     // Delete message if exists
-                    twitchChannelInfo = res.twitchChannels.find(name => name.name.toLowerCase() === twitchMember.name.toLowerCase())
+                    let twitchChannelInfo = res.twitchChannels.find(name => name.name.toLowerCase() === twitchMember.name.toLowerCase())
                     if (twitchChannelInfo.messageid) {
                         // Delete message
                         discordChannel.fetchMessage(twitchChannelInfo.messageid).then(message => message.delete().then((message) => { }))
 
-                    } 
+                    }
                 })
                 client.dbo.collection("servers").updateOne({ _id: client.currentserver._id }, { $pull: { twitchChannels: { name: twitchMember.name } } }, function (err, res) {
                     if (err) throw err;

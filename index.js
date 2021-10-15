@@ -13,7 +13,7 @@ const
     schedule = require('node-schedule')
 
 // Load config
-const { discordtoken, twitchtoken, youtubetoken, youtubeclientid, youtubeclientsecret, mdb_address, mdb_port, mdb_user, mdb_password, twitterKey, twitterSecret, twitterBearer, serverIp, pubSecret } = require('./config/config.json');
+const {connections, database, pubsub_server, configs} = require('./config/config.json');
 
 // Set Dependency Options
 const alignedWithColorsAndTime = winston.format.combine(
@@ -21,33 +21,36 @@ const alignedWithColorsAndTime = winston.format.combine(
     winston.format.timestamp(),
     winston.format.align(),
     winston.format.printf((info) => {
-        const { timestamp, level, message, ...args } = info;
+        const {timestamp, level, message, ...args} = info;
         const ts = timestamp.slice(0, 19).replace('T', ' ');
-        return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
+        let format = `${ts} [${level}]: ${message}`;
+        if (Object.keys(args).length) format += ' ' + JSON.stringify(args, null, 2)
+        return format;
     })
-),
+    ),
     logger = winston.createLogger({
-        level: 'info',
+        level: configs.logging_level,
         format: winston.format.json(),
         transports: [
             //new winston.transports.Console({ format: winston.format.simple() }),
-            new winston.transports.Console({ format: alignedWithColorsAndTime }),
-            new winston.transports.File({ filename: 'logs/latest.log', format: alignedWithColorsAndTime }),
-            new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+            new winston.transports.Console({format: alignedWithColorsAndTime}),
+            new winston.transports.File({filename: 'logs/latest.log', format: alignedWithColorsAndTime}),
+            new winston.transports.File({filename: 'logs/error.log', level: 'error'}),
         ]
     });
+
 var twitterConnect = new Twitter({
-    consumer_key: twitterKey,
-    consumer_secret: twitterSecret,
-    bearer_token: twitterBearer
-}),
+        consumer_key: connections.twitter.key,
+        consumer_secret: connections.twitter.secret,
+        bearer_token: connections.twitter.bearer
+    }),
     pubSubOptions = {
-        port: 1337,
-        callbackUrl: `http://${serverIp}:1337`
+        port: pubsub_server.port,
+        callbackUrl: `${pubsub_server.protocol}://${pubsub_server.address}:${pubsub_server.port}`
     },
     pubsub = pubSubHubbub.createServer(pubSubOptions),
     xmlParser = new xml2js.Parser(),
-    MongoUrl = "mongodb://" + mdb_user + ":" + mdb_password + "@" + mdb_address + ":" + mdb_port + "?authMechanism=DEFAULT&authSource=mhybot",
+    MongoUrl = "mongodb://" + database.user + ":" + database.password + "@" + database.address + ":" + database.port + "?authMechanism=DEFAULT&authSource=mhybot",
     client = new Discord.Client()
 pubsub.listen(1337);
 
@@ -55,41 +58,44 @@ pubsub.listen(1337);
 
 var commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js')),
     timeout = 4 * 60 * 1000,
-    { fancyTimeFormat, fancyDurationFormat } = require('./utils.js');
+    {fancyTimeFormat, fancyDurationFormat} = require('./utils.js');
 client.twitchapi = twitchapi;
 client.youtube = YouTube;
-client.youtube.clientID = youtubetoken;
+client.youtube.clientID = connections.youtube.client_id;
 client.twitter = twitterConnect;
 client.servers = [];
-client.twitchapi.clientID = twitchtoken;
+client.twitchapi.clientID = connections.twitch.token;
 client.commands = new Discord.Collection();
 client.MongoClient = MongoClient;
 client.MongoUrl = MongoUrl;
 client.logger = logger;
 client.pubsub = pubsub;
 client.pubsub.hub = "https://pubsubhubbub.appspot.com/";
+client.configs = configs;
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
     client.commands.set(command.name, command);
 }
 
 // Database connection
-logger.info(`Connecting to MongoDB...`);
-MongoClient.connect(MongoUrl, { useNewUrlParser: true, useUnifiedTopology: true }, function (err, db) {
+logger.verbose(`Connecting to MongoDB...`);
+MongoClient.connect(MongoUrl, {useNewUrlParser: true, useUnifiedTopology: true}, function (err, db) {
     if (err) return logger.error(`Issues connection to MongoDB: ${err}`)
     client.db = db;
-    client.dbo = db.db("mhybot");
+    client.dbo = db.db(database.name);
     logger.info(`Connected to MongoDB.`, `\n`)
-    logger.info("Connecting to Discord...", "\n");
+
+    logger.verbose("Connecting to Discord...", "\n");
     try {
-        client.login(discordtoken)
+        client.login(connections.discord.token)
+        logger.info("Logged in to Discord");
     } catch (err) {
         logger.error(`Error in Discord login: ${err}`);
     }
 })
 
 client.on('ready', () => {
-    logger.info("Logged in to Discord");
+    logger.info("Ready!");
     tick();
     setInterval(tick, timeout);
 });
@@ -102,7 +108,7 @@ pubsub.on('feed', (res) => {
         var ytFeed = [];
         ytFeed.channelId = res.feed.entry[0]["yt:channelId"][0]
         ytFeed.videoId = res.feed.entry[0]["yt:videoId"][0]
-        client.dbo.collection("servers").find({ "youtubeChannels.id": ytFeed.channelId }).toArray(function (err, res) {
+        client.dbo.collection("servers").find({"youtubeChannels.id": ytFeed.channelId}).toArray(function (err, res) {
             res.forEach((server) => {
                 if (server.youtubeChannels) {
                     server.youtubeChannels.forEach((ytChannel) => postYT(server, ytChannel, ytFeed))
@@ -142,32 +148,39 @@ var resubschedule = schedule.scheduleJob('0 0 4 */2 * *', function () {
     });
 })
 client.on('message', message => {
-    var myobj = {
+    const new_server_obj = {
         name: message.guild.name,
         id: message.guild.id,
-        prefix: "~",
-        role: "botadmin",
+        prefix: configs.default_prefix,
+        role: configs.default_management_role,
         discordLiveChannel: null,
         discordVODChannel: null,
         postarchive: null,
         twitchChannels: [],
         youtubeChannels: []
     }
-    client.dbo.collection("servers").findOne({ id: message.guild.id }, function (err, res) {
+    client.dbo.collection("servers").findOne({id: message.guild.id}, function (err, res) {
         if (err) throw err;
         if (!res) {
-            client.dbo.collection("servers").insertOne(myobj, function (err, res) {
+            client.dbo.collection("servers").insertOne(new_server_obj, function (err, res) {
                 if (err) throw err;
                 logger.info(`[${message.guild.name}] New server added to database`)
             })
-            client.currentserver = myobj;
+            client.currentserver = new_server_obj;
         } else {
             client.currentserver = res;
         }
         var server = client.currentserver;
         if (!message.content.startsWith(server.prefix) || message.author.bot) return;
 
-        const args = message.content.slice(server.prefix.length).split(/ +/);
+        const args = message.content.slice(server.prefix.length).match(/(?:[^\s"']+|(?:"[^"]*")|(?:'[^']*'))+/g);
+        args.forEach(function(value, index, array) {
+            const len = value.length-1;
+            if ((value[0] == '"' && value[len] == '"') || (value[0] == "'" && value[len] == "'")) {
+                args[index] = value.substr(1, len - 1);
+            }
+        });
+
         const commandName = args.shift().toLowerCase();
         const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
@@ -183,7 +196,7 @@ client.on('message', message => {
             permissions.push('owner');
         }
 
-        if (message.member.id == "83002230331932672") {
+        if (message.member.id == configs.bot_owner_user_id) {
             permissions.push('admin');
             permissions.push('owner');
             permissions.push('botowner');
@@ -195,10 +208,18 @@ client.on('message', message => {
             return;
         }
 
-        if (command.args && !args.length) {
+        if (command.args && (!command.allowNoSubcommand && !args.length)) {
             let reply = `You didn't provide any arguments, ${message.author}!`;
             if (command.usage) {
-                reply += `\nThe proper usage would be: \`${server.prefix}${command.name} ${command.usage}\``;
+                if (typeof command.usage == 'object') {
+                    // Should technically be array, but jS dUmB
+                    reply += '\nThe proper usages would be:\n';
+                    command.usage.forEach(function(usage) {
+                        reply += '`' + server.prefix + command.name + ' ' + usage + '`\n';
+                    });
+                } else {
+                    reply += `\nThe proper usage would be: \`${server.prefix}${command.name} ${command.usage}\``;
+                }
             }
             return message.channel.send(reply);
         }
@@ -206,10 +227,12 @@ client.on('message', message => {
         try {
             command.execute(client, message, args);
             //message.reply('commands have been disabled temporarily.');
-        }
-        catch (error) {
-            logger.error(error);
-            message.reply('there was an error trying to execute that command!');
+        } catch (error) {
+            // Only do this on non-dev envs! This is causing error output and stack traces to not show
+            if (["dev", "local"].includes(configs.environment)) console.log(error);
+            else logger.error(error);
+            // if (!(configs.environment in ["dev", "local"])) logger.error(error);
+            message.reply('There was an error trying to execute that command!');
         }
     })
 });
@@ -221,14 +244,14 @@ function tick() {
             //dbo.collection("servers");
             result.forEach((server) => {
                 try {
-                    client.twitchapi.users.usersByName({ users: server.twitchChannels.map(x => x.name) }, getChannelInfo.bind(this, server))
+                    client.twitchapi.users.usersByName({users: server.twitchChannels.map(x => x.name)}, getChannelInfo.bind(this, server))
                 } catch (err) {
                     logger.error(`Error in tick: ${err}`);
                 }
 
             })
         })
-        logger.info("Tick happened!")
+        logger.debug("Tick happened!")
     } catch (err) {
         logger.error(`Error in tick: ${err}`)
     }
@@ -238,25 +261,26 @@ function getChannelInfo(server, err, res) {
     if (!res) return;
     if (err) logger.error(`Error in getChannelInfo: ${err}`);
     res.users.forEach((user) => {
-        twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
+        let twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
         try {
-            twitchChannelDB = server.twitchChannels.find(name => name.name.toLowerCase() === user.name.toLowerCase())
-            var myquery = { _id: server._id, "twitchChannels.name": twitchChannelDB.name }
-            var newvalues = { $set: { "twitchChannels.$.id": user._id, "twitchChannels.$.display_name": user.display_name, "twitchChannels.$.name": user.name.toLowerCase() } }
+            let myquery = {_id: server._id, "twitchChannels.name": twitchChannelInfo.name}
+            let newvalues = {$set: {"twitchChannels.$.id": user._id, "twitchChannels.$.display_name": user.display_name, "twitchChannels.$.name": user.name.toLowerCase()}}
             client.dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
                 if (err) throw err;
             });
         } catch (err) {
             console.log(`Error in user database update: ${err}`)
         }
-        client.twitchapi.streams.channel({ channelID: user._id }, postDiscord.bind(this, server, twitchChannelInfo));
-        if (!server.postUploads) { server.postUploads = false }
-        if (server.postUploads == true) {
-            client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "upload", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo, "upload"));
+        client.twitchapi.streams.channel({channelID: user._id}, postDiscord.bind(this, server, twitchChannelInfo));
+
+        server.postUploads = server.postUploads || false;
+        if (server.postUploads) {
+            client.twitchapi.channels.videos({channelID: user._id, broadcast_type: "upload", limit: "1"}, postVOD.bind(this, server, twitchChannelInfo, "upload"));
         }
-        if (!server.postHighlights) { server.postHighlights = false }
-        if (server.postHighlights == true) {
-            client.twitchapi.channels.videos({ channelID: user._id, broadcast_type: "highlight", limit: "4" }, postVOD.bind(this, server, twitchChannelInfo, "highlight"));
+
+        server.postHighlights = server.postHighlights || false;
+        if (server.postHighlights) {
+            client.twitchapi.channels.videos({channelID: user._id, broadcast_type: "highlight", limit: "4"}, postVOD.bind(this, server, twitchChannelInfo, "highlight"));
         }
     })
 }
@@ -266,10 +290,13 @@ function postVOD(server, twitchChannel, type, err, res) {
     if (!server.discordVODChannel) return;
     if (server.discordVODChannel.length == 0) return;
     if (res._total == 0) return;
-    if (!type) { logger.error(`[${server.name}/${twitchChannel.name}] VOD Type not defined`); return; }
+    if (!type) {
+        logger.error(`[${server.name}/${twitchChannel.name}] VOD Type not defined`);
+        return;
+    }
 
     if (err) logger.error(`Error in start of postVOD: ${err} | ${twitchChannel.name} | ${server.name}`);
-    var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
+    var myquery = {_id: server._id, "twitchChannels.name": twitchChannel.name}
     client.dbo.collection("servers").findOne(myquery, function (err, dbres) {
         if (err) return err;
         videos = res.videos.reverse();
@@ -278,23 +305,23 @@ function postVOD(server, twitchChannel, type, err, res) {
             var index = dbres.twitchChannels.findIndex(x => x.name === twitchChannel.name)
             switch (type) {
                 case "archive":
-                    if (!dbres.twitchChannels[index].archivedate) { dbres.twitchChannels[index].archivedate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].archivedate
-                    newvalues = { $set: { "twitchChannels.$.archivedate": video.created_at } }
+                    // if (!dbres.twitchChannels[index].archivedate) { dbres.twitchChannels[index].archivedate = "1970-01-01T00:00:00Z" }
+                    voddate = dbres.twitchChannels[index].archivedate || "1970-01-01T00:00:00Z";
+                    newvalues = {$set: {"twitchChannels.$.archivedate": video.created_at}}
                     notification = `New Twitch Archive from ${dbres.twitchChannels[index].display_name}`
                     break;
 
                 case "upload":
-                    if (!dbres.twitchChannels[index].voddate) { dbres.twitchChannels[index].voddate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].voddate
-                    newvalues = { $set: { "twitchChannels.$.voddate": video.created_at } }
+                    // if (!dbres.twitchChannels[index].voddate) { dbres.twitchChannels[index].voddate = "1970-01-01T00:00:00Z" }
+                    voddate = dbres.twitchChannels[index].voddate || "1970-01-01T00:00:00Z"
+                    newvalues = {$set: {"twitchChannels.$.voddate": video.created_at}}
                     notification = `New Twitch Upload from ${dbres.twitchChannels[index].display_name}`
                     break;
 
                 case "highlight":
-                    if (!dbres.twitchChannels[index].highlightdate) { dbres.twitchChannels[index].highlightdate = "1970-01-01T00:00:00Z" }
-                    voddate = dbres.twitchChannels[index].highlightdate
-                    newvalues = { $set: { "twitchChannels.$.highlightdate": video.created_at } }
+                    // if (!dbres.twitchChannels[index].highlightdate) { dbres.twitchChannels[index].highlightdate = "1970-01-01T00:00:00Z" }
+                    voddate = dbres.twitchChannels[index].highlightdate || "1970-01-01T00:00:00Z"
+                    newvalues = {$set: {"twitchChannels.$.highlightdate": video.created_at}}
                     notification = `New Twitch Highlight from ${dbres.twitchChannels[index].display_name}`
                     break;
             }
@@ -308,8 +335,10 @@ function postVOD(server, twitchChannel, type, err, res) {
             }
             if (moment(voddate) < moment(video.created_at)) {
                 try {
-                    newquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
-                    client.dbo.collection("servers").updateOne(newquery, newvalues, function (err, res) { if (err) throw err; });
+                    newquery = {_id: server._id, "twitchChannels.name": twitchChannel.name}
+                    client.dbo.collection("servers").updateOne(newquery, newvalues, function (err, res) {
+                        if (err) throw err;
+                    });
                     const guild = client.guilds.cache.find(x => x.id === server.id);
                     const discordChannel = guild.channels.cache.find(x => x.name === server.discordVODChannel);
                     const discordEmbed = createVODEmbed(server, twitchChannel, video);
@@ -317,7 +346,6 @@ function postVOD(server, twitchChannel, type, err, res) {
                         (message) => {
                             logger.info(`[${server.name}/${discordChannel.name}] Posted VOD for ${twitchChannel.name}: ${video.title}`)
                             // Write to DB latest video timestamp to prevent posting same video every tick
-
                         }
                     )
                 } catch (err) {
@@ -354,8 +382,8 @@ function postDiscord(server, twitchChannel, err, res) {
                     logger.info(`[${server.name}/${discordChannel.name}] Now Live: ${twitchChannel.name}`)
                     // Write to DB messageid
                     messageid = message.id
-                    var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
-                    var newvalues = { $set: { "twitchChannels.$.messageid": message.id, "twitchChannels.$.online": true } }
+                    var myquery = {_id: server._id, "twitchChannels.name": twitchChannel.name}
+                    var newvalues = {$set: {"twitchChannels.$.messageid": message.id, "twitchChannels.$.online": true}}
                     client.dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
                         if (err) throw err;
                     })
@@ -375,16 +403,16 @@ function postDiscord(server, twitchChannel, err, res) {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Update: ${twitchChannel.name}`)
                 })
             ).catch(error => {
-                logger.error(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
-                var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
-                var newvalues = { $set: { "twitchChannels.$.messageid": null, "twitchChannels.$.online": false } }
-                client.dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
-                    if (err) throw err;
-                    if (res) {
-                        logger.info(`[${server.name}/${discordChannel.name}] Removed missing message from DB for ${twitchChannel.name}`)
-                    }
-                })
-            }
+                    logger.error(`[${server.name}/${discordChannel.name}] Message Missing: ${twitchChannel.name}`)
+                    var myquery = {_id: server._id, "twitchChannels.name": twitchChannel.name}
+                    var newvalues = {$set: {"twitchChannels.$.messageid": null, "twitchChannels.$.online": false}}
+                    client.dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
+                        if (err) throw err;
+                        if (res) {
+                            logger.info(`[${server.name}/${discordChannel.name}] Removed missing message from DB for ${twitchChannel.name}`)
+                        }
+                    })
+                }
             );
         } catch (err) {
             logger.error(`Error in postDiscord edit msg: ${err}`);
@@ -395,16 +423,16 @@ function postDiscord(server, twitchChannel, err, res) {
             const guild = client.guilds.cache.find(x => x.name === server.name);
             const discordChannel = guild.channels.cache.find(x => x.name === server.discordLiveChannel);
             twitchChannelInfo = server.twitchChannels.find(name => name.name.toLowerCase() === twitchChannel.name.toLowerCase())
-            if (!server.postArchive) { server.postArchive = false }
+            if (!server.postArchive) { server.postArchive = false; }
             if (server.postArchive == true) {
-                client.twitchapi.channels.videos({ channelID: twitchChannelInfo.id, broadcast_type: "archive", limit: "1" }, postVOD.bind(this, server, twitchChannelInfo, "archive"));
+                client.twitchapi.channels.videos({channelID: twitchChannelInfo.id, broadcast_type: "archive", limit: "1"}, postVOD.bind(this, server, twitchChannelInfo, "archive"));
             }
 
             discordChannel.messages.fetch(twitchChannel.messageid).then(
                 message => message.delete().then((message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Channel Offline: ${twitchChannel.name}`)
-                    var myquery = { _id: server._id, "twitchChannels.name": twitchChannel.name }
-                    var newvalues = { $set: { "twitchChannels.$.messageid": null, "twitchChannels.$.online": false } }
+                    var myquery = {_id: server._id, "twitchChannels.name": twitchChannel.name}
+                    var newvalues = {$set: {"twitchChannels.$.messageid": null, "twitchChannels.$.online": false}}
                     client.dbo.collection("servers").updateOne(myquery, newvalues, function (err, res) {
                         if (err) throw err;
                     })
@@ -421,9 +449,9 @@ function postDiscord(server, twitchChannel, err, res) {
 function postYT(server, ytChannel, ytFeed) {
     if (!ytChannel) return;
     if (ytChannel.id != ytFeed.channelId) return;
-    client.youtube.authenticate({ type: "key", key: client.youtube.clientID });
-    if (!ytChannel.lastVideoId) { ytChannel.lastVideoId = "" }
-    client.youtube.playlistItems.list({ "part": "snippet", "maxResults": "1", "playlistId": ytChannel.uploadPlaylist }, function (err, res) {
+    client.youtube.authenticate({type: "key", key: client.youtube.clientID});
+    if (!ytChannel.lastVideoId) { ytChannel.lastVideoId = ""; }
+    client.youtube.playlistItems.list({"part": "snippet", "maxResults": "1", "playlistId": ytChannel.uploadPlaylist}, function (err, res) {
         if (!res) return;
         if (res.items[0].id == ytChannel.lastVideoId) return;
         if (res.pageInfo.totalResults == "0") return;
@@ -435,15 +463,17 @@ function postYT(server, ytChannel, ytFeed) {
         } else {
             var notification = `New YouTube Video from ${ytChannel.name} - <https://youtu.be/${vod.snippet.resourceId.videoId}>`;
         }
-        if (!ytChannel.lastPublished) { ytChannel.lastPublished = "2010-01-01T00:00:00.000Z" }
+        if (!ytChannel.lastPublished) { ytChannel.lastPublished = "2010-01-01T00:00:00.000Z"; }
         if (moment(res.items[0].snippet.publishedAt) > moment(ytChannel.lastPublished)) {
             discordChannel.send(notification, discordEmbed).then(
                 (message) => {
                     logger.info(`[${server.name}/${discordChannel.name}] Posted YouTube Video for ${ytChannel.name}: ${res.items[0].snippet.title}`)
                     // Write to DB latest video timestamp to prevent posting same video every tick
-                    newquery = { _id: server._id, "youtubeChannels.name": ytChannel.name }
-                    newvalues = { $set: { "youtubeChannels.$.lastPublished": res.items[0].snippet.publishedAt, "youtubeChannels.$.lastVideoId": res.items[0].id } }
-                    client.dbo.collection("servers").updateOne(newquery, newvalues, function (err, res) { if (err) throw err; });
+                    newquery = {_id: server._id, "youtubeChannels.name": ytChannel.name}
+                    newvalues = {$set: {"youtubeChannels.$.lastPublished": res.items[0].snippet.publishedAt, "youtubeChannels.$.lastVideoId": res.items[0].id}}
+                    client.dbo.collection("servers").updateOne(newquery, newvalues, function (err, res) {
+                        if (err) throw err;
+                    });
                     if (err) throw err;
 
                 }
@@ -497,9 +527,9 @@ function createVODEmbed(server, twitchChannel, res) {
         vod = res
         //console.log(vod)
         // Limit description to 200 characters
-        if (!vod.description) { vod.description = "" }
-        if (!vod.game) { vod.game = "Unknown" }
-        if (!vod.length) { vod.length = "Unknown" }
+        if (!vod.description) { vod.description = ""; }
+        if (!vod.game) { vod.game = "Unknown"; }
+        if (!vod.length) { vod.length = "Unknown"; }
         if (vod.description.length > 199) {
             vod.description = vod.description.substring(0, 199) + "[...]"
         }
@@ -549,7 +579,8 @@ function twitterEmbed(server, twAccount, res) {
 
 function exitHandler(opt, err) {
     if (err) {
-        logger.error(`Error in exitHandler: ${err}`);
+        if (configs.logging_level == 'debug' || ["dev", "local"].includes(configs.environment)) console.error(err);
+        else logger.error(`Error in exitHandler: ${err}`);
     }
     if (opt.save) {
     }
@@ -559,9 +590,9 @@ function exitHandler(opt, err) {
     }
 }
 
-process.on("exit", exitHandler.bind(null, { exit: true }));
-process.on("SIGINT", exitHandler.bind(null, { exit: true }));
-process.on("SIGTERM", exitHandler.bind(null, { exit: true }));
-process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
+process.on("exit", exitHandler.bind(null, {exit: true}));
+process.on("SIGINT", exitHandler.bind(null, {exit: true}));
+process.on("SIGTERM", exitHandler.bind(null, {exit: true}));
+process.on("uncaughtException", exitHandler.bind(null, {exit: true}));
 
 

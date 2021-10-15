@@ -1,8 +1,49 @@
 {
-    "discordtoken": "",
-    "twitchtoken": "",
-    "youtubetoken": "",
-    "mdb_address": "localhost",
-    "mdb_port": "27017",
-    "mdb_database": "mhybot"
+    "connections": {
+        "discord": {
+            "token": ""
+        },
+        "twitch": {
+            "token": ""
+        },
+        "youtube": {
+            "token": "",
+            "client_id": "",
+            "client_secret": ""
+        },
+        "twitter": {
+            "key": "",
+            "secret": "",
+            "bearer": ""
+        }
+    },
+    "database": {
+        "address": "localhost",
+        "port": 27017,
+        "user": "",
+        "password": "",
+        "name": "mhybot"
+    },
+    "pubsub_server": {
+        "protocol": "http",
+        "address": "",
+        "port": 1337,
+        "secret": ""
+    },
+    "configs": {
+        "default_prefix": "~",
+        "default_management_role": "botadmin",
+        "environment": "dev",
+        "logging_level": "info",
+        "bot_owner_user_id": "83002230331932672",
+        "among_us": {
+            "announce_roll": {
+                "410321479004323843": "685161295506571313"
+            },
+            "roll_roles": ["685161295506571313"],
+            "roll_channels": ["779438251563155486"],
+            "staff_roles": ["609460383777947688", "352857086763466754"],
+            "better_crew_link": "https://github.com/OhMyGuus/BetterCrewLink"
+        }
+    }
 }

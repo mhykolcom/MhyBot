@@ -4,22 +4,20 @@ module.exports = {
     description: 'Add channel to monitor list.',
     aliases: ['a'],
     args: true,
-    usage: '<Platform> <ChannelName> [mention]',
+    usage: '<Platform> <ChannelName> [mention role]',
+    allowNoSubcommand: false,
     permission: 'admin',
     execute(client, message, args) {
-        if (args[0].toLowerCase() != "twitch" && args[0].toLowerCase() != "youtube" && args[0].toLowerCase() != "youtubeid") { return message.reply(`Please specify platform (Twitch, YouTube, or YouTubeID).`) }
-        if (!args[1]) { return message.reply(`Please specify channel to monitor.`) }
-        var streamer = args[1];
-        const platform = args[0];
-        var dmention
-        if (args[2]) {
-            dmention = args[2];
-        } else {
-            dmention = null;
-        }
-        var server = client.currentserver;
+        const platform = args[0].toLowerCase();
+        if (platform != "twitch" && platform != "youtube" && platform != "youtubeid") { return message.reply(`Please specify platform (Twitch, YouTube, or YouTubeID).`) }
 
-        if (platform.toLowerCase() == "twitch") {
+        if (!args[1]) { return message.reply(`Please specify channel to monitor.`) }
+        const streamer = args[1];
+
+        const dmention = args[2] || null;
+        let server = client.currentserver;
+
+        if (platform == "twitch") {
             var twitchChannels = server.twitchChannels;
             var twitchMember = twitchChannels.find(channel => channel.name === streamer);
             if (twitchMember) { return message.reply(streamer + " is already in the list."); }
@@ -42,12 +40,12 @@ module.exports = {
                     }
                 }
             });
-        } else if (platform.toLowerCase() == "youtube" || platform.toLowerCase() == "youtubeid") {
+        } else if (platform == "youtube" || platform == "youtubeid") {
             // Add YouTube Channel to DB
             if (!server.youtubeChannels) { var youtubeChannels = [] } else { var youtubeChannels = server.youtubeChannels; }
             var youtubeMember = ""
             client.youtube.authenticate({ type: "key", key: client.youtube.clientID });
-            if (platform.toLowerCase() == "youtube") {
+            if (platform == "youtube") {
                 youtubeMember = youtubeChannels.find(channel => channel.name === streamer);
                 if (youtubeMember) { return message.reply(`${streamer} is already in the list.`) }
                 client.youtube.channels.list({ "part": "snippet, contentDetails", "forUsername": `${streamer}` }, function (err, channel) {
