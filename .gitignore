@@ -6,7 +6,7 @@ node_modules/
 mc-channels.md
 .eslintrc.json
 mongoexport.json
-.vscode/launch.json
-
+.vscode
 
 \.credentials/
+config/oldconfig.json

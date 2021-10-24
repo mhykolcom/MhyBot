@@ -1,4 +1,5 @@
 // Load dependencies
+const { channel } = require('diagnostics_channel');
 const
     fs = require('fs'),
     Discord = require('discord.js'),
@@ -7,7 +8,8 @@ const
     pubSubHubbub = require('pubsubhubbub'),
     xml2js = require('xml2js'),
     winston = require('winston'),
-    twitchapi = require('twitch-api-v5'),
+    //twitchapi = require('twitch-api-v5'),
+    TwitchApi = require('node-twitch').default;
     moment = require('moment'),
     MongoClient = require('mongodb').MongoClient,
     schedule = require('node-schedule')
@@ -59,12 +61,12 @@ pubsub.listen(1337);
 var commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js')),
     timeout = 4 * 60 * 1000,
     {fancyTimeFormat, fancyDurationFormat} = require('./utils.js');
-client.twitchapi = twitchapi;
+//client.twitchapi = twitchapi;
 client.youtube = YouTube;
 client.youtube.clientID = connections.youtube.client_id;
 client.twitter = twitterConnect;
 client.servers = [];
-client.twitchapi.clientID = connections.twitch.token;
+//client.twitchapi.clientID = connections.twitch.token;
 client.commands = new Discord.Collection();
 client.MongoClient = MongoClient;
 client.MongoUrl = MongoUrl;
@@ -76,6 +78,15 @@ for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
     client.commands.set(command.name, command);
 }
+
+// Set TwitchApi
+
+const twitch = new TwitchApi({
+    client_id: connections.twitch.token,
+    client_secret: connections.twitch.secret
+});
+
+client.twitch = twitch;
 
 // Database connection
 logger.verbose(`Connecting to MongoDB...`);
@@ -237,6 +248,14 @@ client.on('message', message => {
     })
 });
 
+// ** New Twitch API Functions **
+async function getStreams(twitchChannels){
+    console.log(twitchChannels)
+    const streams = await client.twitch.getStreams(twitchChannels);
+    console.log(streams);
+    return streams;
+}
+
 // ** Tick Function - runs on interval (default 4 minutes) **
 function tick() {
     try {
@@ -244,7 +263,10 @@ function tick() {
             //dbo.collection("servers");
             result.forEach((server) => {
                 try {
-                    client.twitchapi.users.usersByName({users: server.twitchChannels.map(x => x.name)}, getChannelInfo.bind(this, server))
+                    //console.log({users: server.twitchChannels.map(x => x.name)})
+                    var streams = getStreams({ channels: server.twitchChannels.map(x => x.name)})
+                    //console.log(streams)
+                    //client.twitchapi.users.usersByName({users: server.twitchChannels.map(x => x.name)}, getChannelInfo.bind(this, server))
                 } catch (err) {
                     logger.error(`Error in tick: ${err}`);
                 }
@@ -503,19 +525,23 @@ function postTwitter(server, twAccount) {
 
 function createEmbed(server, twitchChannel, res) {
     // Create the embed code
+    console.log(res.stream);
     var startDate = moment(res.stream.created_at)
     var endDate = moment.now()
     twitchChannel.uptime = moment(endDate).diff(startDate, 'seconds')
     var embed = new Discord.MessageEmbed()
         .setColor("#6441A5")
-        .setTitle(res.stream.channel.display_name)
+        .setTitle(res.stream.channel.status)
+        .setAuthor(res.stream.channel.display_name, res.stream.channel.logo, res.stream.channel.url)
         .setURL(res.stream.channel.url)
-        .setDescription("**" + res.stream.channel.status +
-            "**\n" + res.stream.game)
-        //.setImage(res.stream.preview.large)
-        .setThumbnail(res.stream.channel.logo)
+        //.setDescription("**" + res.stream.channel.status +
+        //    "**\n" + res.stream.game)
+        .addField("Game",res.stream.game,true)
+        .setImage(res.stream.preview.large)
+        //.setThumbnail(res.stream.stream.game.icon)
         .addField("Viewers", res.stream.viewers, true)
         .addField("Uptime", fancyTimeFormat(twitchChannel.uptime), true)
+        .addField("Tags","Coming soon...",false)
         .setFooter("Last updated")
         .setTimestamp()
     return embed;
