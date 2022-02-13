@@ -309,7 +309,7 @@ async function updateTwitchStreams(server) {
                     })
                     streamUpdate.push(channel.name);
                 }
-                if (res.profileLastUpdated < (now() - (60 * 60 * 1000)) || !res.profileLastUpdated) {
+                else if (res.profileLastUpdated < (now() - (60 * 60 * 1000)) || !res.profileLastUpdated) {
                     logger.debug(`Streamer profile out of date: ${channel.name}`)
                     getTwitchUser(channel.name).then((result) => {
                         //console.log(result.data[0])
@@ -333,7 +333,7 @@ async function updateTwitchStreams(server) {
                         })
                     })
                 }
-                if (res.lastUpdated < (now() - (0 * 60 * 1000)) || !res.lastUpdated) {
+                else if (res.lastUpdated < (now() - (0 * 60 * 1000)) || !res.lastUpdated) {
                     // Run code to update stream
                     streamUpdate.push(channel.name);
                     logger.debug(`[${res.display_name}] Streamer flagged for update`)

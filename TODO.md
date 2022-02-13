@@ -7,6 +7,7 @@ Todo:
 - Make a web management UI
 - Cleanup old DB data that's no longer needed
 - Replace outdated VAR with LET
+- Make slash commands for discord
 
 Todone: 
 - Option to ping on message
