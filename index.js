@@ -344,8 +344,9 @@ async function updateTwitchStreams(server) {
         })
     }).then(() => {
         new Promise((resolve, reject) => {
+            if (!streamUpdate) return;
             getTwitchStreams(streamUpdate).then((result) => {
-                console.log(result.thumbnail_url);
+                //console.log(result.thumbnail_url);
                 result.data.forEach((twitchStreamer, index) => {
                     client.dbo.collection("twitchStreamers").findOne({
                         id: twitchStreamer.user_id
@@ -433,7 +434,7 @@ async function checkForTagsInDB(tags) {
         //console.log(tagUpdate);
         if (tagUpdate.length > 0) {
             getTwitchTags(tagUpdate).then((res) => {
-                console.log(res);
+                //console.log(res);
                 res.data.forEach((tag) => {
                     addTagToDB(tag);
                 })
