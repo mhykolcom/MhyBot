@@ -333,7 +333,7 @@ async function updateTwitchStreams(server) {
                         })
                     })
                 }
-                else if (res.lastUpdated < (now() - (0 * 60 * 1000)) || !res.lastUpdated) {
+                else if (res.lastUpdated < (now() - (4 * 60 * 1000)) || !res.lastUpdated) {
                     // Run code to update stream
                     streamUpdate.push(channel.name);
                     logger.debug(`[${res.display_name}] Streamer flagged for update`)
